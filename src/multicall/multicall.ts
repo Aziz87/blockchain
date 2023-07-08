@@ -18,6 +18,7 @@ export async function multiCall(config: NET, items: MultiCallItem[]): Promise<an
         response = await contractMulticall.aggregate(multicallArgs).catch((err: any) => console.error('Ups... multicall error...'));
     } catch (err: any) {
         console.error('multicall error', err);
+        console.log("DEBUG:", JSON.stringify(items))
     }
 
     const result: any = {}
