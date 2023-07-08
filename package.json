@@ -1,14 +1,14 @@
 {
   "name": "blockchain-network",
   "types": "dist/blockchain.d.ts",
-  "type": "module",
+  "type": "commonjs",
   "files": [
     "dist",
     "LICENSE",
     "README.md",
     "package.json"
   ],
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "utilities for All blockchain like EVM (ETH)",
   "main": "dist/blockchain.js",
   "scripts": {
