@@ -17,10 +17,10 @@ export const NEW_TRANSACTIONS = "new_transactions";
 export const lib = {
     nets, multiCall
 }
+
 export type {
-    NET, NetworkToken
+    NET, NetworkToken, NetworkName, CurrencySymbol
 }
-export const interfaces = { CurrencySymbol, NetworkName }
 
 export interface SendTokenDto {
     netId: number,
@@ -226,7 +226,9 @@ export class Blockchain {
         try {
             const config = this.getConfig(netId);
             if (config.nativeCurrency == CurrencySymbol.TRX) {
-                tokens.unshift({ symbol: CurrencySymbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
+                if (!tokens.find(x => x.symbol === CurrencySymbol.TRX)) {
+                    tokens.unshift({ symbol: CurrencySymbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
+                }
                 const tronMethods = new TronMethods(config);
                 const arr = await tronMethods.getBalances(addresses, tokens.map(x => x.address), this.getLimitter(netId));
                 const res: number[][] = [];

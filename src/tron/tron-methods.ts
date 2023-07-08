@@ -189,7 +189,6 @@ export class TronMethods {
     ): Promise<
         { account: string; hash: string; history: TronHistoryElement[] }[]
     > {
-        console.log("getHistory");
         try {
             const result = await Promise.all(
                 accounts.map((account) =>
