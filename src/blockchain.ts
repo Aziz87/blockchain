@@ -85,7 +85,6 @@ export class Blockchain {
 
     public getLimitter(netId: number) {
         const limitter = this.limiters.find(x => x.netId + '' === netId + '')?.limiter;
-        console.log(limitter.counts())
         return limitter;
     }
 
