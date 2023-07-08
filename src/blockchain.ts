@@ -8,12 +8,19 @@ import { multiCall } from './multicall/multicall';
 import MULTICALL from './multicall/multicall-abi';
 import { MultiCallItem } from './multicall/multicall.i';
 import nets from './nets/net';
-import { CurrencySymbol, NET, NetworkToken } from './nets/net.i';
-import InputNetwork from './nets/tron.net';
+import { CurrencySymbol, NET, NetworkToken, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 
 export const NEW_TRANSACTIONS = "new_transactions";
+
+export const lib = {
+    nets, multiCall
+}
+export type {
+    NET, NetworkToken
+}
+export const interfaces = { CurrencySymbol, NetworkName }
 
 export interface SendTokenDto {
     netId: number,
@@ -52,8 +59,6 @@ export class Blockchain {
     //}
 
     private static binancePrices: { symbol: string, price: string }[] = [];
-
-    private network: NET = InputNetwork;
 
     private limiters = nets.map(x => ({
         netId: x.id,
