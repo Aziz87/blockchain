@@ -8,9 +8,9 @@
     "README.md",
     "package.json"
   ],
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "utilities for All blockchain like EVM (ETH)",
-  "main": "blockchain.js",
+  "main": "dist/blockchain.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
