@@ -38,7 +38,6 @@ export function createBuetyWallet(timeout: number = 5000): HDNodeWallet {
 
     while (!temp4) {
         temp = createWallet();
-        console.log(temp.address)
         if (variants3.includes(temp.address.substring(2, 5)) || variants3.includes(temp.address.substr(-3, 3))) temp3 = temp;
         if (variants4.includes(temp.address.substring(2, 6)) || variants4.includes(temp.address.substr(-4, 4))) {
             temp4 = temp;

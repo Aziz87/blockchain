@@ -106,7 +106,7 @@ export class Blockchain {
         const contract = new Contract(config.uniswapRouter, pancakeRouterV2)
         const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', decimals[0]), [tokenIn, tokenOut]);
 
-        console.log("amountOut", amountOut)
+        //console.log("amountOut", amountOut)
         return Number(formatUnits(amountOut, decimals[1]));
     }
 
@@ -117,7 +117,7 @@ export class Blockchain {
         const face = new Interface(pancakeRouterV2)
         const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouter, method: "getAmountsOut", arguments: [parseUnits("1", decimals[i]), [address, USDT.address]], face }))
         const result = await multiCall(config, items);
-        console.log("result", result)
+        //console.log("result", result)
         return result;
     }
 
@@ -194,29 +194,29 @@ export class Blockchain {
 
             // Get wallet balance
             const balance = await provider.getBalance(wallet.address);
-            console.log("balance", balance)
+            //console.log("balance", balance)
 
             // Get estimated gas value
             const estimatedGas = await provider.estimateGas({ to: to, value: balance });
-            console.log("gas", estimatedGas)
+            //console.log("gas", estimatedGas)
 
             // Get gas price
             const maxFeePerGas = (await provider.getFeeData()).maxFeePerGas;
-            console.log("maxFeePerGas", maxFeePerGas);
+            //console.log("maxFeePerGas", maxFeePerGas);
 
             // Get estimated transaction fee
             const estimatedTxFee = maxFeePerGas * estimatedGas;
-            console.log("fee", estimatedTxFee);
+            //console.log("fee", estimatedTxFee);
 
             // Get final transaction value
             const value = balance - estimatedTxFee;
-            console.log('send tx, value ', value)
+            //console.log('send tx, value ', value)
 
             const tx = await wallet.sendTransaction({ value, to });
             const receipt = await tx.wait();
             return receipt;
         } catch (err) {
-            console.log("ERROR SEND ALL BALANCE", err);
+            //console.log("ERROR SEND ALL BALANCE", err);
             return null;
         }
     }
