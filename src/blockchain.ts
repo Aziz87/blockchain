@@ -1,0 +1,294 @@
+import "reflect-metadata";
+import axios from 'axios';
+import Bottleneck from 'bottleneck';
+import { BigNumberish, Contract, Interface, JsonRpcProvider, TransactionReceipt, Wallet, formatEther, formatUnits, parseUnits } from 'ethers';
+import erc20 from './abi/erc20';
+import pancakeRouterV2 from './abi/pancake-router-v2';
+import { multiCall } from './multicall/multicall';
+import MULTICALL from './multicall/multicall-abi';
+import { MultiCallItem } from './multicall/multicall.i';
+import nets from './nets/net';
+import { CurrencySymbol, NET, NetworkToken } from './nets/net.i';
+import InputNetwork from './nets/tron.net';
+import { TronMethods, fromHex } from './tron/tron-methods';
+import { Cron, Expression } from '@reflet/cron';
+
+export const NEW_TRANSACTIONS = "new_transactions";
+
+export interface SendTokenDto {
+    netId: number,
+    fromPrivateKey: string,
+    to: string,
+    amount: number,
+    token: string,
+    tokenDecimals: number
+}
+
+export interface SendDto {
+    netId: number,
+    privateKey: string,
+    to: string,
+    amount: number
+}
+
+export class Blockchain {
+    // const from = transaction.from ? getAddress(transaction.from).toLowerCase() : null;
+    // if (to && addresses.indexOf(to) === -1) {
+    //     addresses.push(to.toLowerCase())
+    //     txs.push(transaction.hash)
+    // } else if (from && addresses.indexOf(from) === -1) {
+    //     addresses.push(from.toLocaleLowerCase())
+    //     txs.push(transaction.hash)
+    // }
+    // for (let topic of logs) {
+    //     if (topic.indexOf('0x000000000000000000000000') === 0) {
+    //         const topicAddress = getAddress("0x" + topic.substring(26)).toLowerCase();
+    //         if (addresses.indexOf(topicAddress) === -1) {
+    //             addresses.push(topicAddress)
+    //             events.push(log)
+    //         }
+    //     }
+    // }
+    //}
+
+    private static binancePrices: { symbol: string, price: string }[] = [];
+
+    private network: NET = InputNetwork;
+
+    private limiters = nets.map(x => ({
+        netId: x.id,
+        limiter: new Bottleneck({
+            maxConcurrent: 2,
+            minTime: 1000
+        })
+    }));
+
+    private limiterSend = new Bottleneck({
+        maxConcurrent: 1,
+        minTime: 2000
+    })
+
+    public shortAddress(address: string, num: number = 6) {
+        return address.substr(0, num) + "..." + address.substr(-num, num);
+    }
+
+
+    constructor(
+    ) {
+        this.updateBinancePrices();
+    }
+
+    public getLimitter(netId: number) {
+        const limitter = this.limiters.find(x => x.netId + '' === netId + '')?.limiter;
+        console.log(limitter.counts())
+        return limitter;
+    }
+
+    public getConfig(netId: number): NET {
+        return nets.find(x => x.id + '' === netId + '');
+    }
+
+    public async getTokensDecimals(tokens: string[], netId: number): Promise<number[]> {
+        const config = this.getConfig(netId);
+        const face = new Interface(erc20);
+        const items: MultiCallItem[] = tokens.map(target => ({ target, method: "decimals", arguments: [], face }))
+        const result = await multiCall(config, items);
+        return result.decimals;
+    }
+
+    public async getAmountOut(tokenIn: string, tokenOut: string, amountIn: number, netId: number): Promise<number> {
+        const decimals = await this.getTokensDecimals([tokenIn, tokenOut], netId);
+        const config = this.getConfig(netId);
+        const contract = new Contract(config.uniswapRouter, pancakeRouterV2)
+        const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', decimals[0]), [tokenIn, tokenOut]);
+
+        console.log("amountOut", amountOut)
+        return Number(formatUnits(amountOut, decimals[1]));
+    }
+
+    public async getTokensPriceUSD(tokens: string[], netId: number) {
+        const decimals = await this.getTokensDecimals(tokens, netId);
+        const config = this.getConfig(netId);
+        const USDT = config.tokens.find(x => x.symbol === CurrencySymbol.USDT)
+        const face = new Interface(pancakeRouterV2)
+        const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouter, method: "getAmountsOut", arguments: [parseUnits("1", decimals[i]), [address, USDT.address]], face }))
+        const result = await multiCall(config, items);
+        console.log("result", result)
+        return result;
+    }
+
+    @Cron(Expression.EVERY_10_SECONDS)
+    private updateBinancePrices() {
+        try {
+            axios.get("https://api.binance.com/api/v3/ticker/price").then(response => {
+                try {
+                    Blockchain.binancePrices = response.data;
+                } catch (err) {
+                    console.log("Biannace CUrrency error", err)
+                }
+            })
+        } catch (err) {
+            console.log("Biannace CUrrency error", err)
+        }
+    }
+
+    public static getPrice(symbol: string): number {
+        const price = Blockchain.binancePrices.find(x => x.symbol === symbol.toUpperCase())?.price
+        return Number(price || 0)
+    }
+
+    public getPrice(symbol: string): number {
+        return Blockchain.getPrice(symbol)
+    }
+
+    public async getBalanceEth(netId: number, address: string): Promise<number> {
+        const config = this.getConfig(netId);
+        if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
+            const tronMethods = new TronMethods(config);
+
+            return this.getLimitter(netId).schedule(() => tronMethods.getBalance(address));
+        } else {//EVM
+            const provider = new JsonRpcProvider(config.rpc[0].url);
+            const balance = await this.getLimitter(netId).schedule(() => provider.getBalance(address));
+            return Number(formatEther(balance))
+        }
+    }
+
+    public async getBalanceUSDT(netId: number, address: string): Promise<number> {
+        const config = this.getConfig(netId);
+        const USDT = config.tokens.find(x => x.symbol === CurrencySymbol.USDT);
+        if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
+            const tronMethods = new TronMethods(config);
+            const abi = [{ "constant": true, "inputs": [], "name": "name", "outputs": [{ "name": "", "type": "string" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_upgradedAddress", "type": "address" }], "name": "deprecate", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "approve", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "deprecated", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_evilUser", "type": "address" }], "name": "addBlackList", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "totalSupply", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_from", "type": "address" }, { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transferFrom", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "upgradedAddress", "outputs": [{ "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "maximumFee", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "_totalSupply", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "unpause", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_maker", "type": "address" }], "name": "getBlackListStatus", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "paused", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_subtractedValue", "type": "uint256" }], "name": "decreaseApproval", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "who", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "_value", "type": "uint256" }], "name": "calcFee", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "pause", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "owner", "outputs": [{ "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "symbol", "outputs": [{ "name": "", "type": "string" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "who", "type": "address" }], "name": "oldBalanceOf", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "newBasisPoints", "type": "uint256" }, { "name": "newMaxFee", "type": "uint256" }], "name": "setParams", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "amount", "type": "uint256" }], "name": "issue", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_addedValue", "type": "uint256" }], "name": "increaseApproval", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "amount", "type": "uint256" }], "name": "redeem", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }], "name": "allowance", "outputs": [{ "name": "remaining", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "basisPointsRate", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "", "type": "address" }], "name": "isBlackListed", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_clearedUser", "type": "address" }], "name": "removeBlackList", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "MAX_UINT", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "_blackListedUser", "type": "address" }], "name": "destroyBlackFunds", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "name": "_initialSupply", "type": "uint256" }, { "name": "_name", "type": "string" }, { "name": "_symbol", "type": "string" }, { "name": "_decimals", "type": "uint8" }], "payable": false, "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "_blackListedUser", "type": "address" }, { "indexed": false, "name": "_balance", "type": "uint256" }], "name": "DestroyedBlackFunds", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "amount", "type": "uint256" }], "name": "Issue", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "amount", "type": "uint256" }], "name": "Redeem", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "newAddress", "type": "address" }], "name": "Deprecate", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "_user", "type": "address" }], "name": "AddedBlackList", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "_user", "type": "address" }], "name": "RemovedBlackList", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "feeBasisPoints", "type": "uint256" }, { "indexed": false, "name": "maxFee", "type": "uint256" }], "name": "Params", "type": "event" }, { "anonymous": false, "inputs": [], "name": "Pause", "type": "event" }, { "anonymous": false, "inputs": [], "name": "Unpause", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "previousOwner", "type": "address" }, { "indexed": true, "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "owner", "type": "address" }, { "indexed": true, "name": "spender", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" }], "name": "Approval", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "from", "type": "address" }, { "indexed": true, "name": "to", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" }], "name": "Transfer", "type": "event" }]
+            return this.getLimitter(netId).schedule(() => tronMethods.getTokenBalance(address, USDT.address, USDT.decimals, abi));
+        } else {//EVM
+            return 0;
+        }
+    }
+
+    public getAddressFromPrivateKey(netId: number, privateKey: string) {
+        const config = this.getConfig(netId);
+        if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
+            const tronMethods = new TronMethods(config);
+            return tronMethods.getAddressFromPrivateKey(privateKey)
+        } else {
+            return new Wallet(privateKey).address;
+        }
+    }
+
+    public async getBalanceEthBigNumber(netId: number, address: string): Promise<BigNumberish> {
+        const config = this.getConfig(netId);
+        const provider = new JsonRpcProvider(config.rpc[0].url);
+        return await provider.getBalance(address);
+    }
+
+    public async sendAllBalance(netId: number, privateKey: string, to: string): Promise<TransactionReceipt> {
+        try {
+            const config = this.getConfig(netId);
+            const provider = new JsonRpcProvider(config.rpc[0].url);
+            const wallet = new Wallet(privateKey, provider);
+
+            // Get wallet balance
+            const balance = await provider.getBalance(wallet.address);
+            console.log("balance", balance)
+
+            // Get estimated gas value
+            const estimatedGas = await provider.estimateGas({ to: to, value: balance });
+            console.log("gas", estimatedGas)
+
+            // Get gas price
+            const maxFeePerGas = (await provider.getFeeData()).maxFeePerGas;
+            console.log("maxFeePerGas", maxFeePerGas);
+
+            // Get estimated transaction fee
+            const estimatedTxFee = maxFeePerGas * estimatedGas;
+            console.log("fee", estimatedTxFee);
+
+            // Get final transaction value
+            const value = balance - estimatedTxFee;
+            console.log('send tx, value ', value)
+
+            const tx = await wallet.sendTransaction({ value, to });
+            const receipt = await tx.wait();
+            return receipt;
+        } catch (err) {
+            console.log("ERROR SEND ALL BALANCE", err);
+            return null;
+        }
+    }
+
+    public async getBalances(netId: number, addresses: string[], tokens?: NetworkToken[]): Promise<number[][]> {
+        try {
+            const config = this.getConfig(netId);
+            if (config.nativeCurrency == CurrencySymbol.TRX) {
+                tokens.unshift({ symbol: CurrencySymbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
+                const tronMethods = new TronMethods(config);
+                const arr = await tronMethods.getBalances(addresses, tokens.map(x => x.address), this.getLimitter(netId));
+                const res: number[][] = [];
+                for (let token of tokens) {
+                    res.push(arr.splice(0, addresses.length).map(x => Number(x / Number('1e' + token.decimals))));
+                }
+                return res;
+            }
+
+            const faceMulticall = new Interface(MULTICALL)
+            const faceERC = new Interface(erc20)
+            const items: MultiCallItem[] = addresses.map(address => ({ target: config.multicall, method: "getEthBalance", arguments: [address], face: faceMulticall }))
+            for (let token of tokens) {
+                for (let address of addresses)
+                    items.push({ target: token.address, method: "balanceOf", arguments: [address], face: faceERC })
+            }
+            const response = await multiCall(config, items);
+            const ethBalances = response.getEthBalance[config.multicall].map(x => Number(formatEther(x)));
+            const result: number[][] = [ethBalances];
+
+            for (let token of tokens) {
+                result.push(response.balanceOf[token.address].map(x => Number(formatUnits(x, token.decimals))));
+            }
+
+            return result;
+        } catch (err) {
+            console.error(err, "balance checker")
+            return []
+        }
+    }
+
+    public async sendToken(dto: SendTokenDto): Promise<string | null> {
+        try {
+            const config = nets.find(net => net.id + '' === '' + dto.netId);
+            if (!config) return null;
+            if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
+                const tronMethods = new TronMethods(config);
+                const tx = await this.limiterSend.schedule(() => tronMethods.sendToken(dto.fromPrivateKey, dto.to, dto.amount, dto.token, dto.tokenDecimals));
+                return tx?.hash || null;
+            } else {//EVM
+                return null;
+            }
+        } catch (err) {
+            console.log("SEND TOKEN", err.message)
+            return null;
+        }
+    }
+
+    public async send(dto: SendDto): Promise<string | null> {
+        try {
+            const config = nets.find(net => net.id + '' === '' + dto.netId);
+            if (!config) return null;
+            if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
+                const tronMethods = new TronMethods(config);
+                const tx = await this.limiterSend.schedule(() => tronMethods.sendTRX(dto.privateKey, dto.to, dto.amount));
+                return tx?.hash || null;
+            } else {//EVM
+                const provider = new JsonRpcProvider(config.rpc[0].url);
+                const wallet = new Wallet(dto.privateKey, provider);
+                const tx = await this.limiterSend.schedule(() => wallet.sendTransaction({ value: formatEther(dto.amount + ''), to: dto.to }));
+                return tx.hash;
+            }
+        } catch (err) {
+            console.log("SEND ERR", err?.message || err)
+            console.log(dto)
+            return null
+        }
+    }
+}
+

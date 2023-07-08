@@ -1,0 +1,3 @@
+# Blockchain-network methods for all EVM (ETH) nets...
+
+### If you need use Tron methods - set TRONGRID_APIKEY = {YOUR_KEY} to .env file in the your project
