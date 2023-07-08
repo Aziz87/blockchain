@@ -1,6 +1,14 @@
 {
   "name": "blockchain-network",
-  "version": "1.0.1",
+  "types": "dist/blockchain.d.ts",
+  "type": "module",
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
+  "version": "1.0.2",
   "description": "utilities for All blockchain like EVM (ETH)",
   "main": "index.js",
   "scripts": {
@@ -22,7 +30,8 @@
   },
   "homepage": "https://github.com/Aziz87/blockchain#readme",
   "devDependencies": {
-    "@types/node": "^20.4.1"
+    "@types/node": "^20.4.1",
+    "typescript": "^5.1.6"
   },
   "dependencies": {
     "@reflet/cron": "1.3.1",
