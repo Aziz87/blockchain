@@ -18,7 +18,7 @@ export const lib = {
     nets, multiCall
 }
 
-export type {
+export {
     NET, NetworkToken, NetworkName, CurrencySymbol
 }
 
@@ -221,7 +221,7 @@ export class Blockchain {
         }
     }
 
-    public async getBalances(netId: number, addresses: string[], tokens?: NetworkToken[]): Promise<number[][]> {
+    public async getBalances(netId: number, addresses: string[], tokens: NetworkToken[] = []): Promise<number[][]> {
         try {
             const config = this.getConfig(netId);
             if (config.nativeCurrency == CurrencySymbol.TRX) {

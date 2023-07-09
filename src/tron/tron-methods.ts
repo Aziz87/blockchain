@@ -219,18 +219,12 @@ export class TronMethods {
         tokens: string[],
         limiter: Bottleneck
     ): Promise<number[]> {
-        if (!this.multicallAbi) {
-            const getContract: any = await limiter.schedule(() =>
-                this.tronWeb.trx.getContract(this.net.multicall)
-            );
-            this.multicallAbi = getContract?.abi?.entrys;
-        }
         const contract = await this.tronWeb.contract(
             this.multicallAbi,
             this.net.multicall
         );
         this.tronWeb.setAddress(this.net.multicall);
-        const result = await contract.methods.balances(accounts, tokens).call();
+        const result: number[] = await limiter.schedule(() => contract.methods.balances(accounts, tokens).call())
         return result;
     }
 }
