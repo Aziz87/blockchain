@@ -210,7 +210,7 @@ export class TronMethods {
         }
     }
 
-    public getAddressFromPrivateKey(privateKey: string): string {
+    public static getAddressFromPrivateKey(privateKey: string): string {
         return TronWeb.address.fromPrivateKey(privateKey);
     }
 

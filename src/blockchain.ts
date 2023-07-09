@@ -173,8 +173,7 @@ export class Blockchain {
     public getAddressFromPrivateKey(netId: number, privateKey: string) {
         const config = this.getConfig(netId);
         if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-            const tronMethods = new TronMethods(config);
-            return tronMethods.getAddressFromPrivateKey(privateKey)
+            return TronMethods.getAddressFromPrivateKey(privateKey)
         } else {
             return new Wallet(privateKey).address;
         }
