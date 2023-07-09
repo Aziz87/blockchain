@@ -211,7 +211,7 @@ export class TronMethods {
     }
 
     public getAddressFromPrivateKey(privateKey: string): string {
-        return this.tronWeb.address.fromPrivateKey(privateKey);
+        return TronWeb.address.fromPrivateKey(privateKey);
     }
 
     public async getBalances(
