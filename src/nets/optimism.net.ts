@@ -27,7 +27,8 @@ const Optimism: NET = {
     wrapedNativToken: null,
     uniswapRouter: null,
     tokens: [{ address: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', decimals: 6, symbol: CurrencySymbol.USDT }
-    ]
+    ],
+    requestsPerSecond:5
 }
 
 export default Optimism;

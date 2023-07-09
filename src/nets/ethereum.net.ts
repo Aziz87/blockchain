@@ -22,6 +22,7 @@ const Ethereum: NET = {
     miningBlockSeconds: 15,
     uniswapRouter: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
     wrapedNativToken: { symbol: CurrencySymbol.WETH, decimals: 18, address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" },
-    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0xdac17f958d2ee523a2206206994597c13d831ec7" }]
+    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0xdac17f958d2ee523a2206206994597c13d831ec7" }],
+    requestsPerSecond:5
 }
 export default Ethereum;

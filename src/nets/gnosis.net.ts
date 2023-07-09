@@ -24,7 +24,8 @@ const Gnosis: NET = {
     miningBlockSeconds: 5,
     wrapedNativToken: null,
     uniswapRouter: null,
-    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0x4ECaBa5870353805a9F068101A40E0f32ed605C6" }]
+    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0x4ECaBa5870353805a9F068101A40E0f32ed605C6" }],
+    requestsPerSecond:3
 }
 
 export default Gnosis;

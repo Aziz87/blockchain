@@ -11,8 +11,12 @@ import { NET } from "./net.i";
 import Optimism from "./optimism.net";
 import Poligon from "./poligon.net";
 
-const nets: NET[] = [
+export const nets: NET[] = [
     Tron, TronNile, Ethereum, BinanceSmartChain, Poligon, Optimism, Arbitrum, Gnosis, Avalanche, Goerli, BinanceSmartChainTestnet,
 ]
+
+export const net = {
+    Tron, TronNile, Ethereum, BinanceSmartChain, Poligon, Optimism, Arbitrum, Gnosis, Avalanche, Goerli, BinanceSmartChainTestnet,
+}
 
 export default nets;

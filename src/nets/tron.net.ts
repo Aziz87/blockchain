@@ -23,7 +23,8 @@ const Tron: NET = {
     uniswapRouter: "",
     tokens: [
         { address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', decimals: 6, symbol: CurrencySymbol.USDT }
-    ]
+    ],
+    requestsPerSecond:5
 }
 
 export default Tron;

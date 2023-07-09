@@ -65,4 +65,5 @@ export interface NET {
     uniswapRouter: string;
     wrapedNativToken: NetworkToken;
     tokens: NetworkToken[];
+    requestsPerSecond:number;
 }

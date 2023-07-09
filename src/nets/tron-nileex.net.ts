@@ -24,7 +24,8 @@ const TronNile: NET = {
     uniswapRouter: "",
     tokens: [
         { address: 'TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj', decimals: 6, symbol: CurrencySymbol.USDT }
-    ]
+    ],
+    requestsPerSecond:5
 }
 
 export default TronNile;

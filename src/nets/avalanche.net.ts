@@ -25,7 +25,8 @@ const Avalanche: NET = {
     miningBlockSeconds: 1.9,
     wrapedNativToken: null,
     uniswapRouter: null,
-    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7" }]
+    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7" }],
+    requestsPerSecond:5
 
 }
 

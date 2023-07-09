@@ -1,13 +1,13 @@
 import "reflect-metadata";
 import axios from 'axios';
 import Bottleneck from 'bottleneck';
-import { BigNumberish, Contract, Interface, JsonRpcProvider, TransactionReceipt, Wallet, formatEther, formatUnits, parseUnits } from 'ethers';
+import { BigNumberish, Contract, Interface, JsonRpcProvider, TransactionReceipt, TransactionResponse, Wallet, formatEther, formatUnits, parseUnits } from 'ethers';
 import erc20 from './abi/erc20';
 import pancakeRouterV2 from './abi/pancake-router-v2';
 import { multiCall } from './multicall/multicall';
 import MULTICALL from './multicall/multicall-abi';
 import { MultiCallItem } from './multicall/multicall.i';
-import nets from './nets/net';
+import nets, { net } from './nets/net';
 import { CurrencySymbol, NET, NetworkToken, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
@@ -39,48 +39,28 @@ export interface SendDto {
 }
 
 export class Blockchain {
-    // const from = transaction.from ? getAddress(transaction.from).toLowerCase() : null;
-    // if (to && addresses.indexOf(to) === -1) {
-    //     addresses.push(to.toLowerCase())
-    //     txs.push(transaction.hash)
-    // } else if (from && addresses.indexOf(from) === -1) {
-    //     addresses.push(from.toLocaleLowerCase())
-    //     txs.push(transaction.hash)
-    // }
-    // for (let topic of logs) {
-    //     if (topic.indexOf('0x000000000000000000000000') === 0) {
-    //         const topicAddress = getAddress("0x" + topic.substring(26)).toLowerCase();
-    //         if (addresses.indexOf(topicAddress) === -1) {
-    //             addresses.push(topicAddress)
-    //             events.push(log)
-    //         }
-    //     }
-    // }
-    //}
+    constructor() {
+        this.updateBinancePrices();
+    }
+
+    public get nets(){
+        return net;
+    }
+    
+    private tronMethodos=[];
 
     private static binancePrices: { symbol: string, price: string }[] = [];
 
     private limiters = nets.map(x => ({
         netId: x.id,
         limiter: new Bottleneck({
-            maxConcurrent: 2,
+            maxConcurrent: x.requestsPerSecond,
             minTime: 1000
         })
     }));
 
-    private limiterSend = new Bottleneck({
-        maxConcurrent: 1,
-        minTime: 2000
-    })
-
     public shortAddress(address: string, num: number = 6) {
         return address.substr(0, num) + "..." + address.substr(-num, num);
-    }
-
-
-    constructor(
-    ) {
-        this.updateBinancePrices();
     }
 
     public getLimitter(netId: number) {
@@ -105,8 +85,6 @@ export class Blockchain {
         const config = this.getConfig(netId);
         const contract = new Contract(config.uniswapRouter, pancakeRouterV2)
         const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', decimals[0]), [tokenIn, tokenOut]);
-
-        //console.log("amountOut", amountOut)
         return Number(formatUnits(amountOut, decimals[1]));
     }
 
@@ -117,7 +95,6 @@ export class Blockchain {
         const face = new Interface(pancakeRouterV2)
         const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouter, method: "getAmountsOut", arguments: [parseUnits("1", decimals[i]), [address, USDT.address]], face }))
         const result = await multiCall(config, items);
-        //console.log("result", result)
         return result;
     }
 
@@ -185,7 +162,7 @@ export class Blockchain {
         return await provider.getBalance(address);
     }
 
-    public async sendAllBalance(netId: number, privateKey: string, to: string): Promise<TransactionReceipt> {
+    public async sendAllBalance(netId: number, privateKey: string, to: string): Promise<TransactionResponse> {
         try {
             const config = this.getConfig(netId);
             const provider = new JsonRpcProvider(config.rpc[0].url);
@@ -211,9 +188,10 @@ export class Blockchain {
             const value = balance - estimatedTxFee;
             //console.log('send tx, value ', value)
 
-            const tx = await wallet.sendTransaction({ value, to });
-            const receipt = await tx.wait();
-            return receipt;
+            
+            const tx = await this.getLimitter(netId).schedule({priority:4},()=> wallet.sendTransaction({ value, to }));
+            // const receipt = await this.getLimitter(netId).schedule({priority:4},()=> tx.wait());
+            return tx;
         } catch (err) {
             //console.log("ERROR SEND ALL BALANCE", err);
             return null;
@@ -227,8 +205,9 @@ export class Blockchain {
                 if (!tokens.find(x => x.symbol === CurrencySymbol.TRX)) {
                     tokens.unshift({ symbol: CurrencySymbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
                 }
-                const tronMethods = new TronMethods(config);
-                const arr = await tronMethods.getBalances(addresses, tokens.map(x => x.address), this.getLimitter(netId));
+                if(!this.tronMethodos[netId])this.tronMethodos[netId]=new TronMethods(config);
+                const tronMethods = this.tronMethodos[netId];
+                const arr:number[] = await this.getLimitter(netId).schedule(()=>tronMethods.getBalances(addresses, tokens.map(x => x.address)));
                 const res: number[][] = [];
                 for (let token of tokens) {
                     res.push(arr.splice(0, addresses.length).map(x => Number(x / Number('1e' + token.decimals))));
@@ -263,8 +242,10 @@ export class Blockchain {
             const config = nets.find(net => net.id + '' === '' + dto.netId);
             if (!config) return null;
             if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-                const tronMethods = new TronMethods(config);
-                const tx = await this.limiterSend.schedule(() => tronMethods.sendToken(dto.fromPrivateKey, dto.to, dto.amount, dto.token, dto.tokenDecimals));
+
+                if(!this.tronMethodos[config.id])this.tronMethodos[config.id]=new TronMethods(config);
+                const tronMethods = this.tronMethodos[config.id];
+                const tx:any = await this.getLimitter(config.id).schedule({priority:4},() => tronMethods.sendToken(dto.fromPrivateKey, dto.to, dto.amount, dto.token, dto.tokenDecimals));
                 return tx?.hash || null;
             } else {//EVM
                 return null;
@@ -280,13 +261,15 @@ export class Blockchain {
             const config = nets.find(net => net.id + '' === '' + dto.netId);
             if (!config) return null;
             if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-                const tronMethods = new TronMethods(config);
-                const tx = await this.limiterSend.schedule(() => tronMethods.sendTRX(dto.privateKey, dto.to, dto.amount));
+                if(!this.tronMethodos[config.id])this.tronMethodos[config.id]=new TronMethods(config);
+                const tronMethods = this.tronMethodos[config.id];
+               
+                const tx:any = await this.getLimitter(config.id).schedule({priority:4},() => tronMethods.sendTRX(dto.privateKey, dto.to, dto.amount));
                 return tx?.hash || null;
             } else {//EVM
                 const provider = new JsonRpcProvider(config.rpc[0].url);
                 const wallet = new Wallet(dto.privateKey, provider);
-                const tx = await this.limiterSend.schedule(() => wallet.sendTransaction({ value: formatEther(dto.amount + ''), to: dto.to }));
+                const tx = await this.getLimitter(config.id).schedule(() => wallet.sendTransaction({ value: formatEther(dto.amount + ''), to: dto.to }));
                 return tx.hash;
             }
         } catch (err) {

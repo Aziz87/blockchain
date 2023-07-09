@@ -25,7 +25,8 @@ const Poligon: NET = {
     miningBlockSeconds: 2.3,
     wrapedNativToken: null,
     uniswapRouter: null,
-    tokens: [{ address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', decimals: 6, symbol: CurrencySymbol.USDT }]
+    tokens: [{ address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', decimals: 6, symbol: CurrencySymbol.USDT }],
+    requestsPerSecond:5
 }
 
 export default Poligon;

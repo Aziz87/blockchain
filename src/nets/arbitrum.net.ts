@@ -26,7 +26,8 @@ const Arbitrum: NET = {
     miningBlockSeconds: 1,
     wrapedNativToken: null,
     uniswapRouter: null,
-    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" }]
+    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" }],
+    requestsPerSecond:5,
 }
 
 export default Arbitrum;

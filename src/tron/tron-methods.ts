@@ -181,32 +181,16 @@ export class TronMethods {
         return params.find((x) => x.key === "getEnergyFee").value;
     }
 
-    static async getHistory(
-        limitter: Bottleneck,
-        accounts: string[],
-        txs: string[],
+    async getHistory(
+        account: string,
         token: string
-    ): Promise<
-        { account: string; hash: string; history: TronHistoryElement[] }[]
-    > {
+    ): Promise<TronHistoryElement[]> {
         try {
-            const result = await Promise.all(
-                accounts.map((account) =>
-                    limitter.schedule(() =>
-                        axios.get(
-                            `https://api.trongrid.io/v1/accounts/${account}/transactions/trc20?limit=20&contract_address=${token}`
-                        )
-                    )
-                )
-            );
-            return result.map((res, i) => ({
-                account: accounts[i],
-                hash: txs[i],
-                history: (res?.data.success && res?.data?.data) || [],
-            }));
+            const result:any = axios.get(`https://api.trongrid.io/v1/accounts/${account}/transactions/trc20?limit=20&contract_address=${token}`)
+            return (result?.data.success && result?.data?.data) || [];
         } catch (err) {
             console.log("Tron getHistory", err);
-            return [];
+            return []
         }
     }
 
@@ -217,14 +201,14 @@ export class TronMethods {
     public async getBalances(
         accounts: string[],
         tokens: string[],
-        limiter: Bottleneck
+
     ): Promise<number[]> {
         const contract = await this.tronWeb.contract(
             this.multicallAbi,
             this.net.multicall
         );
         this.tronWeb.setAddress(this.net.multicall);
-        const result: number[] = await limiter.schedule(() => contract.methods.balances(accounts, tokens).call())
+        const result: number[] = await contract.methods.balances(accounts, tokens).call()
         return result;
     }
 }
