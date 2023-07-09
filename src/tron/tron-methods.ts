@@ -59,9 +59,9 @@ export class TronMethods {
     constructor(net: NET) {
         this.net = net;
         this.tronWeb = new TronWeb({
-            fullHost: net.rpc[0].url,
-            solidityNode: net.rpc[0].url,
-            headers: { "TRON-PRO-API-KEY": net.rpc[0].apiKey },
+            fullHost: net.rpc.url,
+            solidityNode: net.rpc.url,
+            headers: { "TRON-PRO-API-KEY": net.rpc.apiKey },
         });
     }
 
@@ -71,8 +71,8 @@ export class TronMethods {
         amount: number
     ): Promise<{ hash: string; amount: number }> {
         const tronWeb: TronWeb = new TronWeb({
-            fullHost: this.net.rpc[0].url,
-            headers: { "TRON-PRO-API-KEY": this.net.rpc[0].apiKey },
+            fullHost: this.net.rpc.url,
+            headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
             privateKey: privateKeyFrom,
         });
 
@@ -109,8 +109,8 @@ export class TronMethods {
     ): Promise<{ hash: string; amount: number }> {
 
         const tronWeb: TronWeb = new TronWeb({
-            fullHost: this.net.rpc[0].url,
-            headers: { "TRON-PRO-API-KEY": this.net.rpc[0].apiKey },
+            fullHost: this.net.rpc.url,
+            headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
             privateKey: privateKeyFrom,
         });
 

@@ -4,7 +4,7 @@ import ABI from "./multicall-abi";
 import { MultiCallItem } from "./multicall.i";
 
 export async function multiCall(config: NET, items: MultiCallItem[]): Promise<any> {
-    const provider = new JsonRpcProvider(config.rpc[0].url);
+    const provider = new JsonRpcProvider(config.rpc.url);
     const contractMulticall = new Contract(config.multicall, ABI, provider);
 
     const multicallArgs = items.map(item => ({
