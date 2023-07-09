@@ -58,7 +58,7 @@ export interface NET {
     networkName: NetworkName// 'Ethereum Mainnet',
     nativeCurrency: CurrencySymbol;//'eth',
     explorer: IExplorer;
-    rpc: IRPC[]//       { name: 'SecureRPC', url: 'https://api.securerpc.com/v1}
+    rpc: IRPC;//       { name: 'SecureRPC', url: 'https://api.securerpc.com/v1}
     multicall: string;//'0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
     tornadoContracts: TornatoContract[],
     miningBlockSeconds: number;//15

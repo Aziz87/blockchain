@@ -9,9 +9,7 @@ const Optimism: NET = {
         address: 'https://optimistic.etherscan.io/address/',
         block: 'https://optimistic.etherscan.io/block/'
     },
-    rpc: [
-        { name: 'Optimism', url: 'https://mainnet.optimism.io/' }
-    ],
+    rpc:{ name: 'Optimism', url: 'https://mainnet.optimism.io/' },
     multicall: "0x35A6Cdb2C9AD4a45112df4a04147EB07dFA01aB7",
     tornadoContracts: [{
         instances: [

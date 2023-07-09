@@ -9,11 +9,7 @@ const Arbitrum: NET = {
         address: 'https://arbiscan.io/address/',
         block: 'https://arbiscan.io/block/'
     },
-    rpc: [
-        { name: 'Arbitrum RPC', url: 'https://arb1.arbitrum.io/rpc/' },
-        { name: 'Arbitrum Public RPC', url: 'https://arbitrum.public-rpc.com/' },
-        { name: '1RPC', url: 'https://1rpc.io/arb/' }
-    ],
+    rpc: { name: 'Arbitrum RPC', url: 'https://arb1.arbitrum.io/rpc/' },
     multicall: "0x842eC2c7D803033Edf55E478F461FC547Bc54EB2",
     tornadoContracts: [{
         instances: [

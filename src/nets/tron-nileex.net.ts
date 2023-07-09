@@ -12,9 +12,7 @@ const TronNile: NET = {
         address: 'https://nile.tronscan.org/#/address/',
         block: 'https://nile.tronscan.org/#/block/'
     },
-    rpc: [
-        { name: 'nileex', url: 'https://nile.trongrid.io/', apiKey: process.env.TRONGRID_APIKEY }
-    ],
+    rpc: { name: 'nileex', url: 'https://nile.trongrid.io/', apiKey: process.env.TRONGRID_APIKEY },
     multicall: "TRPKCrLsHrSXfAo8zAUa8fBRMm8pz43MRs",
     tornadoContracts: [
 

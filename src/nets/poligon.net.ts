@@ -9,10 +9,7 @@ const Poligon: NET = {
         address: 'https://polygonscan.com/address/',
         block: 'https://polygonscan.com/block/'
     },
-    rpc: [
-        { name: 'Polygon RPC', url: 'https://polygon-rpc.com/' },
-        { name: '1RPC', url: 'https://1rpc.io/matic/' }
-    ],
+    rpc: { name: 'Polygon RPC', url: 'https://polygon-rpc.com/' },
     multicall: "0x11ce4B23bD875D7F5C6a31084f55fDe1e9A87507",
     tornadoContracts: [{
         instances: [

@@ -9,9 +9,7 @@ const Goerli: NET = {
         address: 'https://goerli.etherscan.io/address/',
         block: 'https://goerli.etherscan.io/block/'
     },
-    rpc: [
-        { name: 'Infura', url: 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161' }
-    ],
+    rpc: { name: 'Infura', url: 'https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161' },
     multicall: "0x77dca2c955b15e9de4dbbcf1246b4b85b651e50e",
     tornadoContracts: [
         {

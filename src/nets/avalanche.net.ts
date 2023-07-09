@@ -9,9 +9,7 @@ const Avalanche: NET = {
         address: 'https://snowtrace.io/address/',
         block: 'https://snowtrace.io/block/'
     },
-    rpc: [
-        { name: 'Avalanche Public PRC', url: 'https://avalanche-evm.publicnode.com/' },
-    ],
+    rpc: { name: 'Avalanche Public PRC', url: 'https://avalanche-evm.publicnode.com/' },
     multicall: "0xe86e3989c74293Acc962156cd3F525c07b6a1B6e",
     tornadoContracts: [{
         instances: [

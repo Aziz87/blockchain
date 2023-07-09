@@ -11,9 +11,7 @@ const Tron: NET = {
         address: 'https://tronscan.org/#/address/',
         block: 'https://tronscan.org/#/block/'
     },
-    rpc: [
-        { name: 'trongrid', url: 'https://api.trongrid.io', apiKey: process.env.TRONGRID_APIKEY }
-    ],
+    rpc: { name: 'trongrid', url: 'https://api.trongrid.io', apiKey: process.env.TRONGRID_APIKEY },
     multicall: "TYPACdASdAe4ZjcACwHscmqy6KCssP2jDt",
     tornadoContracts: [
 

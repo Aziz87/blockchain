@@ -9,9 +9,7 @@ const BinanceSmartChainTestnet: NET = {
         address: 'https://testnet.bscscan.com/address/',
         block: 'https://testnet.bscscan.com/block/'
     },
-    rpc: [
-        { name: 'BinanceRPC', url: 'https://data-seed-prebsc-2-s3.binance.org:8545' }
-    ],
+    rpc: { name: 'BinanceRPC', url: 'https://data-seed-prebsc-2-s3.binance.org:8545' },
     multicall: "0x3bab6eD264a077Ef54BF9654E43f2F5B6b6A46D7",
     tornadoContracts: [
         {
