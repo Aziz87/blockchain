@@ -27,7 +27,7 @@ export function decode(codeWithIv: string, secret: string): string {
 export function createWallet(): HDNodeWallet {
     return Wallet.createRandom();
 }
-
+//
 export function createBuetyWallet(timeout: number = 5000): HDNodeWallet {
     let temp = null
     let temp3 = null
