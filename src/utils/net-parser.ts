@@ -45,7 +45,7 @@ export default class NetParser extends EventEmitter {
             if (config.nativeCurrency === CurrencySymbol.TRX) {
                 return await this.limitter.schedule(() => this.tronMethods.getBlockNumber())
             } else {
-                const provider = new JsonRpcProvider(config.rpc[0].url);
+                const provider = new JsonRpcProvider(config.rpc.url);
                 return await this.limitter.schedule(() => provider.getBlockNumber())
             }
         } catch (err) {
@@ -80,7 +80,7 @@ export default class NetParser extends EventEmitter {
                 console.log(`${blockNumber} / ${toBlockNumber} [${transactions.length} txs]`)
                 this.emit(NetParser.NEW_TRANSACTIONS, config, transactions);
             } else {
-                const provider = new JsonRpcProvider(config.rpc[0].url);
+                const provider = new JsonRpcProvider(config.rpc.url);
                 const block = await provider.getBlock(blockNumber, true)
                 console.log(`${blockNumber} / ${this.blockNumber} [${block.transactions.length} txs]`)
                 this.emit(NetParser.NEW_TRANSACTIONS, config, block.prefetchedTransactions);

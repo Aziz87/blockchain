@@ -129,7 +129,7 @@ export class Blockchain {
 
             return this.getLimitter(netId).schedule(() => tronMethods.getBalance(address));
         } else {//EVM
-            const provider = new JsonRpcProvider(config.rpc[0].url);
+            const provider = new JsonRpcProvider(config.rpc.url);
             const balance = await this.getLimitter(netId).schedule(() => provider.getBalance(address));
             return Number(formatEther(balance))
         }
@@ -158,14 +158,14 @@ export class Blockchain {
 
     public async getBalanceEthBigNumber(netId: number, address: string): Promise<BigNumberish> {
         const config = this.getConfig(netId);
-        const provider = new JsonRpcProvider(config.rpc[0].url);
+        const provider = new JsonRpcProvider(config.rpc.url);
         return await provider.getBalance(address);
     }
 
     public async sendAllBalance(netId: number, privateKey: string, to: string): Promise<TransactionResponse> {
         try {
             const config = this.getConfig(netId);
-            const provider = new JsonRpcProvider(config.rpc[0].url);
+            const provider = new JsonRpcProvider(config.rpc.url);
             const wallet = new Wallet(privateKey, provider);
 
             // Get wallet balance
@@ -267,7 +267,7 @@ export class Blockchain {
                 const tx:any = await this.getLimitter(config.id).schedule({priority:4},() => tronMethods.sendTRX(dto.privateKey, dto.to, dto.amount));
                 return tx?.hash || null;
             } else {//EVM
-                const provider = new JsonRpcProvider(config.rpc[0].url);
+                const provider = new JsonRpcProvider(config.rpc.url);
                 const wallet = new Wallet(dto.privateKey, provider);
                 const tx = await this.getLimitter(config.id).schedule(() => wallet.sendTransaction({ value: formatEther(dto.amount + ''), to: dto.to }));
                 return tx.hash;
