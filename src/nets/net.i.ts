@@ -30,9 +30,15 @@ export enum CurrencySymbol {
     AVAX = 'AVAX',
     USDT = "USDT",
     USDC = "USDC",
+    BUSD = "BUSD",
     WBTC = "WBTC",
+    NFT = "NFT",
+    USDD = "USDD",
     TRX = "TRX",
     WTRX = "WTRX",
+    SHIB = "SHIB",
+    SOL = "SOL",
+    TUSD = "TUSD"
 }
 
 export interface IExplorer {
