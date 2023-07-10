@@ -11,6 +11,7 @@ import nets, { net } from './nets/net';
 import { CurrencySymbol, NET, NetworkToken, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
+import * as crypto from "./utils/crypto"
 
 export const NEW_TRANSACTIONS = "new_transactions";
 
@@ -19,7 +20,7 @@ export const lib = {
 }
 
 export {
-    NET, NetworkToken, NetworkName, CurrencySymbol
+    NET, NetworkToken, NetworkName, CurrencySymbol, crypto
 }
 
 export interface SendTokenDto {
@@ -208,10 +209,13 @@ export class Blockchain {
                 if(!this.tronMethodos[netId])this.tronMethodos[netId]=new TronMethods(config);
                 const tronMethods = this.tronMethodos[netId];
                 const arr:number[] = await this.getLimitter(netId).schedule(()=>tronMethods.getBalances(addresses, tokens.map(x => x.address)));
-                const res: number[][] = [];
-                for (let token of tokens) {
-                    res.push(arr.splice(0, addresses.length).map(x => Number(x / Number('1e' + token.decimals))));
+                const res: number[][] = tokens.map(x=>[]);
+                
+                while(arr.length){
+                    const userPart = arr.splice(0,tokens.length);
+                    userPart.forEach((x,i)=>res[i].push((Number(x / Number('1e' + tokens[i].decimals)))))
                 }
+                
                 return res;
             }
 

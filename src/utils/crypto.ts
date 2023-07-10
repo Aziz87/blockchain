@@ -1,6 +1,7 @@
 
 import * as crypto from "crypto";
 import { Contract, HDNodeWallet, JsonRpcProvider, Wallet, getAddress, verifyMessage } from "ethers";
+import { fromHex } from "./format-tx";
 
 function wrapSecret(secret): string {
     return "00000000000000000000000000000000".split("").map((char, index) => secret.substring(index, index + 1) || char).join("")
@@ -28,7 +29,7 @@ export function createWallet(): HDNodeWallet {
     return Wallet.createRandom();
 }
 //
-export function createBuetyWallet(timeout: number = 5000): HDNodeWallet {
+export function createBuetyWallet(timeout: number = 5000, type:"hex"|"base58"="hex"): HDNodeWallet {
     let temp = null
     let temp3 = null
     let temp4 = null
@@ -38,8 +39,9 @@ export function createBuetyWallet(timeout: number = 5000): HDNodeWallet {
 
     while (!temp4) {
         temp = createWallet();
-        if (variants3.includes(temp.address.substring(2, 5)) || variants3.includes(temp.address.substr(-3, 3))) temp3 = temp;
-        if (variants4.includes(temp.address.substring(2, 6)) || variants4.includes(temp.address.substr(-4, 4))) {
+        const address = type==="hex"?temp.address:fromHex(temp.address);
+        if (variants3.includes(address.substring(2, 5)) || variants3.includes(address.substr(-3, 3))) temp3 = temp;
+        if (variants4.includes(address.substring(2, 6)) || variants4.includes(address.substr(-4, 4))) {
             temp4 = temp;
             break;
         }
