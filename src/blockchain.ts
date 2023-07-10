@@ -227,6 +227,7 @@ export class Blockchain {
                     items.push({ target: token.address, method: "balanceOf", arguments: [address], face: faceERC })
             }
             const response = await multiCall(config, items);
+            if(!response.getEthBalance) return null;
             const ethBalances = response.getEthBalance[config.multicall].map(x => Number(formatEther(x)));
             const result: number[][] = [ethBalances];
 
@@ -236,8 +237,8 @@ export class Blockchain {
 
             return result;
         } catch (err) {
-            console.error(err, "balance checker")
-            return []
+            // console.error(err, "balance checker")
+            return null;
         }
     }
 

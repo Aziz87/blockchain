@@ -16,10 +16,10 @@ export async function multiCall(config: NET, items: MultiCallItem[]): Promise<an
     let response = null;
     try {
         response = await contractMulticall.aggregate(multicallArgs).catch((err: any) => {
-            console.error('Ups... multicall error...', err)
+            // console.error('Ups... multicall error...', err)
         });
     } catch (err: any) {
-        console.error('multicall error', err);
+        // console.error('multicall error', err);
     }
 
     const result: any = {}
