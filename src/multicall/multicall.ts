@@ -1,7 +1,9 @@
-import { Contract, JsonRpcProvider } from 'ethers';
+import { Contract, providers } from 'ethers';
 import { NET } from "../nets/net.i";
 import ABI from "./multicall-abi";
 import { MultiCallItem } from "./multicall.i";
+
+const {JsonRpcProvider} = providers;
 
 export async function multiCall(config: NET, items: MultiCallItem[]): Promise<any> {
     const provider = new JsonRpcProvider(config.rpc.url);

@@ -1,10 +1,11 @@
 import Bottleneck from "bottleneck";
-import { JsonRpcProvider } from "ethers";
+import { providers } from "ethers";
 import { EventEmitter } from "stream";
 import nets from "../nets/net";
 import { CurrencySymbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
 import { TronMethods } from "../tron/tron-methods";
+const {JsonRpcProvider} = providers;
 
 const TRON_BLOCKS_PARSE_RANGE = 5;
 
@@ -71,7 +72,7 @@ export default class NetParser extends EventEmitter {
     }
 
     async parse(blockNumber: number, toBlockNumber?: number) {
-        try {
+        // try {
             const config = this.getConfig(this.netId);
             if (config.nativeCurrency === CurrencySymbol.TRX) {
                 const blocks = await this.limitter.schedule(() => this.tronMethods.getBlockRange(blockNumber, toBlockNumber))
@@ -80,12 +81,12 @@ export default class NetParser extends EventEmitter {
                 this.emit(NetParser.NEW_TRANSACTIONS, config, transactions);
             } else {
                 const provider = new JsonRpcProvider(config.rpc.url);
-                const block = await provider.getBlock(blockNumber, true)
+                const block = await provider.getBlockWithTransactions(blockNumber)
                 // console.log(`${blockNumber} / ${this.blockNumber} [${block.transactions.length} txs]`)
-                this.emit(NetParser.NEW_TRANSACTIONS, config, block.prefetchedTransactions);
+                this.emit(NetParser.NEW_TRANSACTIONS, config, block.transactions);
             }
-        } catch (err) {
-            console.log("error parse block", err)
-        }
+        // } catch (err) {
+            // console.log(`network ${this.netId}: error parse block`, err)
+        // }
     }
 }

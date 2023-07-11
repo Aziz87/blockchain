@@ -1,7 +1,9 @@
-import { AbiCoder, BigNumberish, TransactionResponse } from "ethers";
+import { BigNumberish,utils } from "ethers";
 import * as TronWeb from "tronweb";
 import { CurrencySymbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
+import  {TransactionResponse} from "@ethersproject/abstract-provider"
+const {AbiCoder} = utils;
 
 export function fromHex(hexAddress: string): string {
     return TronWeb.address.fromHex(hexAddress);

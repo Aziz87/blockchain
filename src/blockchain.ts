@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import axios from 'axios';
 import Bottleneck from 'bottleneck';
-import { BigNumberish, Contract, Interface, JsonRpcProvider, TransactionReceipt, TransactionResponse, Wallet, formatEther, formatUnits, parseUnits } from 'ethers';
+import { BigNumberish, Contract,ethers,Wallet } from 'ethers';
 import erc20 from './abi/erc20';
 import pancakeRouterV2 from './abi/pancake-router-v2';
 import { multiCall } from './multicall/multicall';
@@ -14,8 +14,11 @@ import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
 import NetParser from "./utils/net-parser"
 import {formatTX, TX} from "./utils/format-tx"
+import  {TransactionReceipt, TransactionResponse} from "@ethersproject/abstract-provider"
 
 const WAValidator = require('multicoin-address-validator');
+const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
+const {JsonRpcProvider} =ethers.providers;
 
 
 export const lib = {
@@ -80,7 +83,7 @@ export class Blockchain {
      * @param skipBlocks - scan block only when {skipBlocks} left after mining 
      */
     private static watchCache:NetParser[]=[];
-    public watch(netId:number, skipBlocks:number=10):NetParser{
+    public watch(netId:number, skipBlocks:number=0):NetParser{
         const net = this.getNet(netId);
         if(!net) throw new Error("Network not found");
         if(Blockchain.watchCache[netId]) return Blockchain.watchCache[netId];
@@ -211,11 +214,11 @@ export class Blockchain {
             //console.log("maxFeePerGas", maxFeePerGas);
 
             // Get estimated transaction fee
-            const estimatedTxFee = maxFeePerGas * estimatedGas;
+            const estimatedTxFee = maxFeePerGas.mul(estimatedGas);
             //console.log("fee", estimatedTxFee);
 
             // Get final transaction value
-            const value = balance - estimatedTxFee;
+            const value = balance.sub(estimatedTxFee);
             //console.log('send tx, value ', value)
 
             

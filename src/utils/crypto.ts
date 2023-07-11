@@ -1,7 +1,10 @@
 
 import * as crypto from "crypto";
-import { Contract, HDNodeWallet, JsonRpcProvider, Wallet, getAddress, verifyMessage } from "ethers";
+import { Contract, Wallet, ethers } from "ethers";
 import { fromHex } from "./format-tx";
+const {getAddress, verifyMessage} = ethers.utils;
+const { JsonRpcProvider} = ethers.providers;
+
 
 function wrapSecret(secret): string {
     return "00000000000000000000000000000000".split("").map((char, index) => secret.substring(index, index + 1) || char).join("")
@@ -25,11 +28,11 @@ export function decode(codeWithIv: string, secret: string): string {
     return message;
 }
 
-export function createWallet(): HDNodeWallet {
+export function createWallet(): Wallet {
     return Wallet.createRandom();
 }
 //
-export function createBuetyWallet(timeout: number = 5000, type:"hex"|"base58"="hex"): HDNodeWallet {
+export function createBuetyWallet(timeout: number = 5000, type:"hex"|"base58"="hex"): Wallet {
     let temp = null
     let temp3 = null
     let temp4 = null
