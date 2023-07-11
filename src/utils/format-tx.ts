@@ -150,6 +150,6 @@ export function formatTron(tronTransaction: BlockTransaction): TX {
     return tronTx;
 }
 
-export function format(net: NET, transaction: BlockTransaction | TransactionResponse): TX {
+export function formatTX(net: NET, transaction: BlockTransaction | TransactionResponse): TX {
     return net.nativeCurrency === CurrencySymbol.TRX ? formatTron(transaction as BlockTransaction) : formatEth(transaction as TransactionResponse);
 }

@@ -13,6 +13,7 @@ import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
 import NetParser from "./utils/net-parser"
+import {formatTX, TX} from "./utils/format-tx"
 
 const WAValidator = require('multicoin-address-validator');
 
@@ -28,7 +29,8 @@ const valid = function(net:NET|number, address:string):boolean{
 }
 
 export {
-    NET, NetworkToken, NetworkName, CurrencySymbol, crypto, valid, net
+    NET, NetworkToken, NetworkName, CurrencySymbol, TX, NetParser,
+    crypto, valid, net, formatTX,
 }
 
 export interface SendTokenDto {
