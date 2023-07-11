@@ -48,10 +48,9 @@ export function decodeParams(output, types = ["address", "uint256"], ignoreMetho
 }
 
 export class TX {
-    public from: string;
-    public fromBalanceUSDT?: number;
-    public to: string;
-    public contractAddress: string;
+    public from: Lowercase<string>;
+    public to: Lowercase<string>;
+    public contractAddress: Lowercase<string>;
     public value: BigNumberish;
     public hash: string;
     public error: string;
@@ -61,35 +60,35 @@ export class TX {
 export function formatEth(transaction: TransactionResponse): TX {
     const tx = new TX();
     tx.hash = transaction.hash;
-    tx.from = transaction.from;
+    tx.from = transaction.from.toLowerCase() as Lowercase<string>;
 
     try {
         if (transaction.data) {
             if (transaction.data === "0x") {
-                tx.to = transaction.to;
+                tx.to = transaction.to.toLowerCase() as Lowercase<string>;
                 tx.value = transaction.value;
             } else {
-                tx.contractAddress = transaction.to;
+                tx.contractAddress = transaction.to.toLowerCase() as Lowercase<string>;
                 const method = transaction.data.substring(0, 10);
                 tx.method = methodsDecode[method] || method;
                 if (method === methods.transfer) {
                     const [hexAddress, value] = decodeParams(transaction.data);
-                    tx.to = "0x" + hexAddress.substr(2)
+                    tx.to = "0x" + hexAddress.substr(2).toLowerCase() as Lowercase<string>
                     tx.value = value;
                 } else if (method === methods.transferFrom) {
                     const [sender, recipient, value] = decodeParams(transaction.data);
-                    tx.from = "0x" + sender.substr(2)
-                    tx.to = "0x" + recipient.substr(2)
+                    tx.from = "0x" + sender.substr(2).toLowerCase() as Lowercase<string>
+                    tx.to = "0x" + recipient.substr(2).toLowerCase() as Lowercase<string>
                     tx.value = value;
                 } else if (method === methods.addLiquidityETH) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
-                    tx.to = "0x" + to.substr(2)
-                    tx.contractAddress = "0x" + token.substr(2)
+                    tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
+                    tx.contractAddress = "0x" + token.substr(2).toLowerCase() as Lowercase<string>
                     tx.value = amountETHMin;
                 } else if (method === methods.stake) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
-                    tx.to = "0x" + to.substr(2)
-                    tx.contractAddress = "0x" + token.substr(2)
+                    tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
+                    tx.contractAddress = "0x" + token.substr(2).toLowerCase() as Lowercase<string>
                     tx.value = amountETHMin;
                 }
             }
@@ -108,13 +107,13 @@ export function formatTron(tronTransaction: BlockTransaction): TX {
         if (tronTransaction.raw_data?.contract) {
             const contract = tronTransaction.raw_data.contract[0];
             if (contract.type === "TransferContract") {
-                tronTx.from = fromHex(contract.parameter?.value?.owner_address);
-                tronTx.to = fromHex(contract.parameter?.value?.to_address);
+                tronTx.from = fromHex(contract.parameter?.value?.owner_address).toLowerCase() as Lowercase<string>
+                tronTx.to = fromHex(contract.parameter?.value?.to_address).toLowerCase() as Lowercase<string>
                 tronTx.value = contract.parameter?.value?.amount;
             } else if (contract.type === "TriggerSmartContract") {
                 const data = "0x" + contract.parameter?.value?.data;
-                tronTx.from = fromHex(contract.parameter?.value?.owner_address);
-                tronTx.contractAddress = fromHex(contract.parameter?.value?.contract_address);
+                tronTx.from = fromHex(contract.parameter?.value?.owner_address).toLowerCase() as Lowercase<string>
+                tronTx.contractAddress = fromHex(contract.parameter?.value?.contract_address).toLowerCase() as Lowercase<string>
                 const method = data.substring(0, 10);
 
                 tronTx.method = methodsDecode[method] || method;
@@ -125,7 +124,7 @@ export function formatTron(tronTransaction: BlockTransaction): TX {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
                     const amount = Number("0x" + arr.join(""))
-                    tronTx.to = to;
+                    tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.value = amount;
                 } else if (method === methods.transferFrom) {
                     arr.splice(0, 24); // 000000000000000000000000
@@ -133,15 +132,15 @@ export function formatTron(tronTransaction: BlockTransaction): TX {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
                     const amount = Number("0x" + arr.join(""))
-                    tronTx.from = from;
-                    tronTx.to = to;
+                    tronTx.from = from.toLowerCase() as Lowercase<string>
+                    tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.value = amount;
                 } else if (method === methods.approve) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
                     arr.splice(0, 24); // 000000000000000000000000
                     const amount = Number("0x" + arr.join(""))
-                    tronTx.to = to;
+                    tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.value = amount;
                 } else tronTx.error = "unknown data " + data
             } else tronTx.error = "unknown contract.type " + contract.type
