@@ -9,7 +9,7 @@ const BinanceSmartChain: NET = {
         address: 'https://bscscan.com/address/',
         block: 'https://bscscan.com/block/'
     },
-    rpc: { name: '1RPC', url: 'https://1rpc.io/bnb' },
+    rpc: { name: 'BSC Ankr', url: 'https://rpc.ankr.com/bsc' },
     multicall: "0x41263cba59eb80dc200f3e2544eda4ed6a90e76c",
     tornadoContracts: [{
         instances: [
