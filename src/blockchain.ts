@@ -12,7 +12,7 @@ import { CurrencySymbol, NET, NetworkToken, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
-const WAValidator = require('./validators/wallet_address_validator.js');
+const WAValidator = require('multicoin-address-validator');
 
 
 export const NEW_TRANSACTIONS = "new_transactions";
