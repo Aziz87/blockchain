@@ -12,10 +12,10 @@ import { CurrencySymbol, NET, NetworkToken, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
+import NetParser from "./utils/net-parser"
+
 const WAValidator = require('multicoin-address-validator');
 
-
-export const NEW_TRANSACTIONS = "new_transactions";
 
 export const lib = {
     nets, multiCall
@@ -27,9 +27,8 @@ const valid = function(net:NET|number, address:string):boolean{
     return symbol===CurrencySymbol.TRX ?  WAValidator.validate(address, 'trx') :  WAValidator.validate(address, 'eth');
 }
 
-
 export {
-    NET, NetworkToken, NetworkName, CurrencySymbol, crypto, valid
+    NET, NetworkToken, NetworkName, CurrencySymbol, crypto, valid, net
 }
 
 export interface SendTokenDto {
@@ -56,6 +55,10 @@ export class Blockchain {
     public get nets(){
         return net;
     }
+
+    public  getNet(id:number){
+        return Object.values(net).find(x=>x.id===id);
+    }
     
     private tronMethodos=[];
 
@@ -68,6 +71,21 @@ export class Blockchain {
             minTime: 1000
         })
     }));
+
+    /**
+     * 
+     * @param netId - network id
+     * @param skipBlocks - scan block only when {skipBlocks} left after mining 
+     */
+    private static watchCache:NetParser[]=[];
+    public watch(netId:number, skipBlocks:number=10):NetParser{
+        const net = this.getNet(netId);
+        if(!net) throw new Error("Network not found");
+        if(Blockchain.watchCache[netId]) return Blockchain.watchCache[netId];
+        const parser = new NetParser(this.getLimitter(netId), netId, net.miningBlockSeconds, skipBlocks);
+        Blockchain.watchCache[netId] = parser;
+        return parser;
+    }
 
     public shortAddress(address: string, num: number = 6) {
         return address.substr(0, num) + "..." + address.substr(-num, num);
