@@ -61,6 +61,7 @@ export function formatEth(transaction: TransactionResponse): TX {
     const tx = new TX();
     tx.hash = transaction.hash;
     tx.from = transaction.from.toLowerCase() as Lowercase<string>;
+    tx.value = transaction?.value || 0;
 
     try {
         if (transaction.data) {
