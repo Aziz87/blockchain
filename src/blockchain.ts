@@ -12,6 +12,8 @@ import { CurrencySymbol, NET, NetworkToken, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
+const WAValidator = require('./validators/wallet_address_validator.js');
+
 
 export const NEW_TRANSACTIONS = "new_transactions";
 
@@ -19,8 +21,15 @@ export const lib = {
     nets, multiCall
 }
 
+
+const valid = function(net:NET|number, address:string):boolean{
+    const symbol = (net as NET)?.nativeCurrency || Object.values(nets).find(x=>x.id===net)?.nativeCurrency;
+    return symbol===CurrencySymbol.TRX ?  WAValidator.validate(address, 'trx') :  WAValidator.validate(address, 'eth');
+}
+
+
 export {
-    NET, NetworkToken, NetworkName, CurrencySymbol, crypto
+    NET, NetworkToken, NetworkName, CurrencySymbol, crypto, valid
 }
 
 export interface SendTokenDto {

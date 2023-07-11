@@ -66,10 +66,12 @@ export interface NET {
     explorer: IExplorer;
     rpc: IRPC;//       { name: 'SecureRPC', url: 'https://api.securerpc.com/v1}
     multicall: string;//'0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
-    tornadoContracts: TornatoContract[],
+    tornadoContracts: TornatoContract[];
     miningBlockSeconds: number;//15
     uniswapRouter: string;
     wrapedNativToken: NetworkToken;
     tokens: NetworkToken[];
     requestsPerSecond:number;
 }
+
+
