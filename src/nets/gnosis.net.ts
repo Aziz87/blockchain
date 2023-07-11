@@ -9,7 +9,7 @@ const Gnosis: NET = {
         address: 'https://blockscout.com/xdai/mainnet/address/',
         block: 'https://blockscout.com/xdai/mainnet/block/'
     },
-    rpc: { name: 'GnosisChain', url: 'https://rpc.gnosischain.com' },
+    rpc: { name: 'Gnosis Ankr', url: 'https://rpc.ankr.com/gnosis' },
     multicall: "0xb5b692a88bdfc81ca69dcb1d924f59f0413a602a",
     tornadoContracts: [{
         instances: [
