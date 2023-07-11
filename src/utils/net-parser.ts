@@ -72,7 +72,7 @@ export default class NetParser extends EventEmitter {
     }
 
     async parse(blockNumber: number, toBlockNumber?: number) {
-        // try {
+        try {
             const config = this.getConfig(this.netId);
             if (config.nativeCurrency === CurrencySymbol.TRX) {
                 const blocks = await this.limitter.schedule(() => this.tronMethods.getBlockRange(blockNumber, toBlockNumber))
@@ -85,8 +85,8 @@ export default class NetParser extends EventEmitter {
                 // console.log(`${blockNumber} / ${this.blockNumber} [${block.transactions.length} txs]`)
                 this.emit(NetParser.NEW_TRANSACTIONS, config, block.transactions);
             }
-        // } catch (err) {
-            // console.log(`network ${this.netId}: error parse block`, err)
-        // }
+        } catch (err) {
+            console.log(`network ${this.netId}: error parse block`, err)
+        }
     }
 }
