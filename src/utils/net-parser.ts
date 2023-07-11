@@ -57,7 +57,6 @@ export default class NetParser extends EventEmitter {
     async onNewBlock() {//
         try {
             const blockNumber = await this.getBlockNumber(this.netId);
-            console.log("blockNumber", blockNumber)
             if (!blockNumber) return;
             this.blockNumber = blockNumber;
             if (!this.lastParsedBlock) this.lastParsedBlock = this.blockNumber - 2;
