@@ -1,25 +1,9 @@
 import axios from "axios";
-import Bottleneck from "bottleneck";
 import * as TronWeb from "tronweb";
+import {utils} from "ethers"
 import { NET } from "../nets/net.i";
 import { BlockInfo } from "./interfaces";
-
-export interface TronTokenInfo {
-    symbol: string; //	"USDT"
-    address: string; //	"TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
-    decimals: number; //	6
-    name: string; //	"Tether USD"
-}
-
-export interface TronHistoryElement {
-    transaction_id: string; //	"267853baf8cc3ae2c40abb1889d350f6cad670f39f3055a6cbca71ff0fb72bdd"
-    token_info: TronTokenInfo;
-    block_timestamp: number; //	1564974891000
-    from: string; //	"TB4oXR1T7BQ6yVeVBuESMrLhgL3V4XSCg7"
-    to: string; //	"TJmmqjb1DK9TTZbQXzRQ2AuA94z4gKAPFh"
-    type: string; //	"Transfer"
-    value: string; //	"1"
-}
+import { TronTransactionInfo, TronHistoryElement, TronTransaction } from "./tron-methods-d"
 
 export function toHex(str) {
     return TronWeb.address.toHex(str);
@@ -54,7 +38,7 @@ export class TronMethods {
         },
         { payable: true, stateMutability: "Payable", type: "Fallback" },
     ];
-    private tronWeb;
+    private tronWeb:TronWeb;
     private net: NET;
     constructor(net: NET) {
         this.net = net;
@@ -65,16 +49,19 @@ export class TronMethods {
         });
     }
 
+
+    public getProvider(privateKey) {
+        this.tronWeb.privateKey=privateKey;
+        return this.tronWeb;
+    }
+
     async sendTRX(
         privateKeyFrom: string,
         to: string,
         amount: number
     ): Promise<{ hash: string; amount: number }> {
-        const tronWeb: TronWeb = new TronWeb({
-            fullHost: this.net.rpc.url,
-            headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
-            privateKey: privateKeyFrom,
-        });
+
+        const tronWeb = this.getProvider(privateKeyFrom);
 
         const gasPrice = await this.getGasPrice();
         const gasLimit = 30000;
@@ -108,15 +95,11 @@ export class TronMethods {
         tokenDecimals: number
     ): Promise<{ hash: string; amount: number }> {
 
-        const tronWeb: TronWeb = new TronWeb({
-            fullHost: this.net.rpc.url,
-            headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
-            privateKey: privateKeyFrom,
-        });
+        
 
         // console.log("amount " + amount + " gasPrice " + gasPrice + ", gasLimit " + gasLimit, "TRX")
         try {
-            const { transfer } = await tronWeb.contract().at(tokenAddress);
+            const { transfer } = await this.tronWeb.contract().at(tokenAddress);
             const value = (amount * Number("1e" + tokenDecimals)).toFixed();
             const hash = await transfer(to, value).send();
             return { hash, amount };
@@ -186,11 +169,33 @@ export class TronMethods {
         token: string
     ): Promise<TronHistoryElement[]> {
         try {
-            const result:any = axios.get(`https://api.trongrid.io/v1/accounts/${account}/transactions/trc20?limit=20&contract_address=${token}`)
+            const result: any = axios.get(`${this.net.rpc.url}/v1/accounts/${account}/transactions/trc20?limit=20&contract_address=${token}`)
             return (result?.data.success && result?.data?.data) || [];
         } catch (err) {
             console.log("Tron getHistory", err);
             return []
+        }
+    }
+
+
+
+    async getTransactionById(hash: string): Promise<TronTransaction> {
+        try {
+            return await this.tronWeb.trx.getTransaction(hash)
+        } catch (err) {
+            console.log("Tron getTransactionById", err);
+            return null;
+        }
+    }
+
+
+
+    async getTransactionInfoById(hash: string): Promise<TronTransactionInfo> {
+        try {
+            return await this.tronWeb.trx.getTransactionInfo(hash)
+        } catch (err) {
+            console.log("Tron getTransactionInfoById", err);
+            return null;
         }
     }
 
@@ -211,4 +216,22 @@ export class TronMethods {
         const result: number[] = await contract.methods.balances(accounts, tokens).call()
         return result;
     }
+
+
+    private static abiCache: any[] = [];
+    public async  getContractAbi(contractAddress) {
+        try {
+            if (TronMethods.abiCache[contractAddress]) return TronMethods.abiCache[contractAddress];
+            const contract = await this.tronWeb.trx.getContract(contractAddress);
+            const abi = contract.abi.entrys;
+            if (abi) TronMethods.abiCache[contractAddress] = abi;
+            return abi;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+
+    //----- DECODER
+
 }

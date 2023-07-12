@@ -26,7 +26,7 @@ const Tron: NET = {
         { address: 'TFczxzPhnThNSqr5by8tvxsdCFRRz6cPNq', symbol: CurrencySymbol.NFT,decimals: 6 },
         { address: 'TPYmHEhy5n8TCEfYGqW2rPxsghSfzghPDn', symbol: CurrencySymbol.USDD,decimals: 6 },
     ],
-    requestsPerSecond:5
+    requestsPerSecond:14
 }
 
 export default Tron;

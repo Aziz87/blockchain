@@ -13,8 +13,9 @@ import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
 import NetParser from "./utils/net-parser"
-import {formatTX, TX} from "./utils/format-tx"
-import  {TransactionReceipt, TransactionResponse} from "@ethersproject/abstract-provider"
+import {formatTron,formatEth, TX} from "./utils/format-tx"
+import  {TransactionResponse} from "@ethersproject/abstract-provider"
+import { BlockTransaction } from "./tron/interfaces";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -33,7 +34,7 @@ const valid = function(net:NET|number, address:string):boolean{
 
 export {
     NET, NetworkToken, NetworkName, CurrencySymbol, TX, NetParser,
-    crypto, valid, net, formatTX,
+    crypto, valid, net,
 }
 
 export interface SendTokenDto {
@@ -65,7 +66,7 @@ export class Blockchain {
         return Object.values(net).find(x=>x.id===id);
     }
     
-    private tronMethodos=[];
+    private tronMethodos:TronMethods[]=[];
 
     private static binancePrices: { symbol: string, price: string }[] = [];
 
@@ -73,7 +74,7 @@ export class Blockchain {
         netId: x.id,
         limiter: new Bottleneck({
             maxConcurrent: x.requestsPerSecond,
-            minTime: 1000
+           minTime:1000/x.requestsPerSecond
         })
     }));
 
@@ -155,24 +156,67 @@ export class Blockchain {
         return Blockchain.getPrice(symbol)
     }
 
-    public async getBalanceEth(netId: number, address: string): Promise<number> {
-        const config = this.getConfig(netId);
-        if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-            const tronMethods = new TronMethods(config);
+    public async getTransaction(net:NET|number, hash:string){
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        const limitter = this.getLimitter(net.id);
 
-            return this.getLimitter(netId).schedule(() => tronMethods.getBalance(address));
+        if(net.nativeCurrency===CurrencySymbol.TRX){
+            return await limitter.schedule(()=>this.getTronMethods(net).getTransactionById(hash));
+        }else{
+            const provider = this.getProvider<ethers.providers.JsonRpcProvider>(net.id);
+            return await limitter.schedule(()=> provider.getTransaction(hash))
+        }
+    }
+
+    public async getTransactionReceipt(net:NET|number, hash:string){
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+       
+        const limitter = this.getLimitter(net.id);
+
+        if(net.nativeCurrency===CurrencySymbol.TRX){
+            return await limitter.schedule(()=>this.getTronMethods(net).getTransactionInfoById(hash));
+        }else{
+            const provider = this.getProvider<ethers.providers.JsonRpcProvider>(net.id);
+            return await limitter.schedule(()=>provider.getTransactionReceipt(hash))
+        }
+    }
+
+
+    public async getContractAbi(net:NET|number, contractAddress:string){
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        if(net.nativeCurrency===CurrencySymbol.TRX){
+            const limitter = this.getLimitter(net.id);
+            return await limitter.schedule(()=>this.getTronMethods(net).getContractAbi(contractAddress));
+        }else{
+            return null;
+        }
+    }
+    
+
+
+    public async getBalanceEth(net:NET| number, address: string): Promise<number> {
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+
+        const limitter = this.getLimitter(net.id);
+        if (net.nativeCurrency == CurrencySymbol.TRX) { // TVM
+            const tronMethods = this.getTronMethods(net);
+            return limitter.schedule(() => tronMethods.getBalance(address));
         } else {//EVM
-            const provider = new JsonRpcProvider(config.rpc.url);
-            const balance = await this.getLimitter(netId).schedule(() => provider.getBalance(address));
+            const provider = new JsonRpcProvider(net.rpc.url);
+            const balance = await limitter.schedule(() => provider.getBalance(address));
             return Number(formatEther(balance))
         }
     }
 
     public async getBalanceUSDT(netId: number, address: string): Promise<number> {
-        const config = this.getConfig(netId);
-        const USDT = config.tokens.find(x => x.symbol === CurrencySymbol.USDT);
-        if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-            const tronMethods = new TronMethods(config);
+        const net = this.getConfig(netId);
+        const USDT = net.tokens.find(x => x.symbol === CurrencySymbol.USDT);
+        if (net.nativeCurrency == CurrencySymbol.TRX) { // TVM
+            const tronMethods = this.getTronMethods(net)
             const abi = [{ "constant": true, "inputs": [], "name": "name", "outputs": [{ "name": "", "type": "string" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_upgradedAddress", "type": "address" }], "name": "deprecate", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "approve", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "deprecated", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_evilUser", "type": "address" }], "name": "addBlackList", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "totalSupply", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_from", "type": "address" }, { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transferFrom", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "upgradedAddress", "outputs": [{ "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "maximumFee", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "_totalSupply", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "unpause", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_maker", "type": "address" }], "name": "getBlackListStatus", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "paused", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_subtractedValue", "type": "uint256" }], "name": "decreaseApproval", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "who", "type": "address" }], "name": "balanceOf", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "_value", "type": "uint256" }], "name": "calcFee", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [], "name": "pause", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "owner", "outputs": [{ "name": "", "type": "address" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "symbol", "outputs": [{ "name": "", "type": "string" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "who", "type": "address" }], "name": "oldBalanceOf", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "newBasisPoints", "type": "uint256" }, { "name": "newMaxFee", "type": "uint256" }], "name": "setParams", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "amount", "type": "uint256" }], "name": "issue", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "_spender", "type": "address" }, { "name": "_addedValue", "type": "uint256" }], "name": "increaseApproval", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "amount", "type": "uint256" }], "name": "redeem", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [{ "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" }], "name": "allowance", "outputs": [{ "name": "remaining", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [], "name": "basisPointsRate", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": true, "inputs": [{ "name": "", "type": "address" }], "name": "isBlackListed", "outputs": [{ "name": "", "type": "bool" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "_clearedUser", "type": "address" }], "name": "removeBlackList", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": true, "inputs": [], "name": "MAX_UINT", "outputs": [{ "name": "", "type": "uint256" }], "payable": false, "stateMutability": "view", "type": "function" }, { "constant": false, "inputs": [{ "name": "newOwner", "type": "address" }], "name": "transferOwnership", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "constant": false, "inputs": [{ "name": "_blackListedUser", "type": "address" }], "name": "destroyBlackFunds", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "name": "_initialSupply", "type": "uint256" }, { "name": "_name", "type": "string" }, { "name": "_symbol", "type": "string" }, { "name": "_decimals", "type": "uint8" }], "payable": false, "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "_blackListedUser", "type": "address" }, { "indexed": false, "name": "_balance", "type": "uint256" }], "name": "DestroyedBlackFunds", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "amount", "type": "uint256" }], "name": "Issue", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "amount", "type": "uint256" }], "name": "Redeem", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "newAddress", "type": "address" }], "name": "Deprecate", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "_user", "type": "address" }], "name": "AddedBlackList", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "_user", "type": "address" }], "name": "RemovedBlackList", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": false, "name": "feeBasisPoints", "type": "uint256" }, { "indexed": false, "name": "maxFee", "type": "uint256" }], "name": "Params", "type": "event" }, { "anonymous": false, "inputs": [], "name": "Pause", "type": "event" }, { "anonymous": false, "inputs": [], "name": "Unpause", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "previousOwner", "type": "address" }, { "indexed": true, "name": "newOwner", "type": "address" }], "name": "OwnershipTransferred", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "owner", "type": "address" }, { "indexed": true, "name": "spender", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" }], "name": "Approval", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "name": "from", "type": "address" }, { "indexed": true, "name": "to", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" }], "name": "Transfer", "type": "event" }]
             return this.getLimitter(netId).schedule(() => tronMethods.getTokenBalance(address, USDT.address, USDT.decimals, abi));
         } else {//EVM
@@ -187,6 +231,14 @@ export class Blockchain {
         } else {
             return new Wallet(privateKey).address;
         }
+    }
+
+    public getProvider<T>(net:NET|number, privateKey?:string):T{
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+       if( net.nativeCurrency===CurrencySymbol.TRX){
+            return this.tronMethodos[net.id].getProvider(privateKey) as T
+       }else return new JsonRpcProvider(net.rpc.url) as T;
     }
 
     public async getBalanceEthBigNumber(netId: number, address: string): Promise<BigNumberish> {
@@ -231,6 +283,21 @@ export class Blockchain {
         }
     }
 
+
+    public async formatTX(net:NET, transaction:BlockTransaction|TransactionResponse):Promise<TX>{
+        return net.nativeCurrency === CurrencySymbol.TRX 
+        ? formatTron(net, this, transaction as BlockTransaction)
+        : formatEth(transaction as TransactionResponse);
+    }
+
+
+    private getTronMethods(net:NET|number):TronMethods{
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        if(!this.tronMethodos[net.id])this.tronMethodos[net.id]=new TronMethods(net);
+        return this.tronMethodos[net.id];
+    }
+
     public async getBalances(netId: number, addresses: string[], tokens: NetworkToken[] = []): Promise<number[][]> {
         try {
             const config = this.getConfig(netId);
@@ -238,7 +305,7 @@ export class Blockchain {
                 if (!tokens.find(x => x.symbol === CurrencySymbol.TRX)) {
                     tokens.unshift({ symbol: CurrencySymbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
                 }
-                if(!this.tronMethodos[netId])this.tronMethodos[netId]=new TronMethods(config);
+                
                 const tronMethods = this.tronMethodos[netId];
                 const arr:number[] = await this.getLimitter(netId).schedule(()=>tronMethods.getBalances(addresses, tokens.map(x => x.address)));
                 const res: number[][] = tokens.map(x=>[]);
@@ -276,13 +343,11 @@ export class Blockchain {
 
     public async sendToken(dto: SendTokenDto): Promise<string | null> {
         try {
-            const config = nets.find(net => net.id + '' === '' + dto.netId);
-            if (!config) return null;
-            if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-
-                if(!this.tronMethodos[config.id])this.tronMethodos[config.id]=new TronMethods(config);
-                const tronMethods = this.tronMethodos[config.id];
-                const tx:any = await this.getLimitter(config.id).schedule({priority:4},() => tronMethods.sendToken(dto.fromPrivateKey, dto.to, dto.amount, dto.token, dto.tokenDecimals));
+            const net = nets.find(net => net.id + '' === '' + dto.netId);
+            if (!net) return null;
+            if (net.nativeCurrency == CurrencySymbol.TRX) { // TVM
+                const tronMethods = this.getTronMethods(net)
+                const tx:any = await this.getLimitter(net.id).schedule({priority:4},() => tronMethods.sendToken(dto.fromPrivateKey, dto.to, dto.amount, dto.token, dto.tokenDecimals));
                 return tx?.hash || null;
             } else {//EVM
                 return null;
@@ -295,18 +360,16 @@ export class Blockchain {
 
     public async send(dto: SendDto): Promise<string | null> {
         try {
-            const config = nets.find(net => net.id + '' === '' + dto.netId);
-            if (!config) return null;
-            if (config.nativeCurrency == CurrencySymbol.TRX) { // TVM
-                if(!this.tronMethodos[config.id])this.tronMethodos[config.id]=new TronMethods(config);
-                const tronMethods = this.tronMethodos[config.id];
-               
-                const tx:any = await this.getLimitter(config.id).schedule({priority:4},() => tronMethods.sendTRX(dto.privateKey, dto.to, dto.amount));
+            const net = nets.find(net => net.id + '' === '' + dto.netId);
+            if (!net) return null;
+            if (net.nativeCurrency == CurrencySymbol.TRX) { // TVM
+                const tronMethods = this.getTronMethods(net)
+                const tx:any = await this.getLimitter(net.id).schedule({priority:4},() => tronMethods.sendTRX(dto.privateKey, dto.to, dto.amount));
                 return tx?.hash || null;
             } else {//EVM
-                const provider = new JsonRpcProvider(config.rpc.url);
+                const provider = new JsonRpcProvider(net.rpc.url);
                 const wallet = new Wallet(dto.privateKey, provider);
-                const tx = await this.getLimitter(config.id).schedule(() => wallet.sendTransaction({ value: formatEther(dto.amount + ''), to: dto.to }));
+                const tx = await this.getLimitter(net.id).schedule(() => wallet.sendTransaction({ value: formatEther(dto.amount + ''), to: dto.to }));
                 return tx.hash;
             }
         } catch (err) {
