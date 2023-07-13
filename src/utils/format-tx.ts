@@ -51,9 +51,7 @@ export function decodeParams(output, types = ["address", "uint256"], ignoreMetho
 
     const abiCoder = new AbiCoder();
     if (output.replace(/^0x/, "").length % 64){
-        console.log("data length",output.replace(/^0x/, "").length)
-        console.log(output)
-        throw new Error("Ошибка в декодировании данных. Возможно транзакция сфейленная. The encoded string is not valid. Its length must be a multiple of 64.");
+        throw new Error(" The encoded string is not valid. Its length must be a multiple of 64.");
     }
    try {
         return abiCoder.decode(types, output).reduce((obj, arg, index) => {
