@@ -8,7 +8,7 @@
     "README.md",
     "package.json"
   ],
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "utilities for All blockchain like EVM (ETH)",
   "main": "dist/blockchain.js",
   "scripts": {

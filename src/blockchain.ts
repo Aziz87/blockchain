@@ -290,7 +290,6 @@ export class Blockchain {
         : formatEth(transaction as TransactionResponse);
     }
 
-
     private getTronMethods(net:NET|number):TronMethods{
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;

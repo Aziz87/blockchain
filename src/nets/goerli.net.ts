@@ -42,7 +42,7 @@ const Goerli: NET = {
     ],
     miningBlockSeconds: 12,
     wrapedNativToken: { address: '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6', decimals: 18, symbol: CurrencySymbol.WETH },
-    uniswapRouter: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D",
+    uniswapRouter: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
     tokens: [
         { address: '0x07865c6e87b9f70255377e024ace6630c1eaa37f', decimals: 6, symbol: CurrencySymbol.USDT }
     ],

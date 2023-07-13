@@ -23,7 +23,7 @@ const Optimism: NET = {
     }],
     miningBlockSeconds: 2,
     wrapedNativToken: null,
-    uniswapRouter: null,
+    uniswapRouter: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45",
     tokens: [{ address: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', decimals: 6, symbol: CurrencySymbol.USDT }
     ],
     requestsPerSecond:5
