@@ -18,7 +18,7 @@ const Tron: NET = {
     ],
     miningBlockSeconds: 3,
     wrapedNativToken: { address: 'TNUC9Qb1rRpS5CbWLmNMxXBjyFoydXjWFR', decimals: 6, symbol: CurrencySymbol.WTRX },
-    uniswapRouter: "",
+    uniswapRouter: "TKzxdSv2FZKQrEqkKVgp5DcwEXBEKMg2Ax",
     tokens: [
         { address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', decimals: 6, symbol: CurrencySymbol.USDT },
         { address: 'TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8',symbol: CurrencySymbol.USDC,decimals: 6 },

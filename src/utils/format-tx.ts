@@ -114,10 +114,10 @@ export function formatEth(transaction: TransactionResponse): TX {
                     methods.swapTokensForExactTokens+'',
                     methods.swapExactTokensForTokens+''
                 ].includes(method)) {
+                    tx.router = transaction.to.toLowerCase() as Lowercase<string>;
                     const res = face.pancakeRouterV2.parseTransaction(transaction)
                     tx.amountIn = res.args.amountIn || res.args.amountInMax || transaction.value;
                     tx.amountOut = res.args.amountOutMin || res.args.amountOut;
-                    tx.router = transaction.to.toLowerCase() as Lowercase<string>;
                     tx.tokens = res.args.path.map(x=>x.toLowerCase());
                     tx.to = res.args.to.toLowerCase();
                 } else if (method === methods.stake) {
@@ -129,7 +129,7 @@ export function formatEth(transaction: TransactionResponse): TX {
             }
         }
     } catch (e) {
-        tx.error = "Ошибка формата ETH транзакции " + e?.message;
+        tx.error = "" + e?.message;
     }
     return tx;
 
