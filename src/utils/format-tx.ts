@@ -1,4 +1,4 @@
-import { BigNumberish,utils } from "ethers";
+import { BigNumberish,utils, } from "ethers"
 import * as TronWeb from "tronweb";
 import { CurrencySymbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
@@ -30,6 +30,7 @@ export enum methods {
     swapTokensForExactTokens = "0x8803dbee",
     swapExactETHForTokens = "0x7ff36ab5",
     swapExactTokensForETH = "0x18cbafe5",
+    swapETHForExactTokens = "0xfb3bdb41",
     swapExactTokensForETHSupportingFeeOnTransferTokens = "0x791ac947",
     swapExactETHForTokensSupportingFeeOnTransferTokens = "0xb6f9de95"
 }
@@ -49,9 +50,12 @@ export function decodeParams(output, types = ["address", "uint256"], ignoreMetho
         output = "0x" + output.replace(/^0x/, "").substring(8);
 
     const abiCoder = new AbiCoder();
-    if (output.replace(/^0x/, "").length % 64)
+    if (output.replace(/^0x/, "").length % 64){
+        console.log("data length",output.replace(/^0x/, "").length)
+        console.log(output)
         throw new Error("Ошибка в декодировании данных. Возможно транзакция сфейленная. The encoded string is not valid. Its length must be a multiple of 64.");
-    try {
+    }
+   try {
         return abiCoder.decode(types, output).reduce((obj, arg, index) => {
             if (types[index] == "address")
                 arg = 41 + arg.substr(2).toLowerCase();
@@ -91,7 +95,7 @@ export function formatEth(transaction: TransactionResponse): TX {
             } else {
                 tx.tokens = [transaction.to.toLowerCase() as Lowercase<string>];
                 const method = transaction.data.substring(0, 10);
-                tx.method = methodsDecode[method] || method;
+                tx.method = methodsDecode[method].split("_")[0] || method;
                 if (method === methods.transfer) {
                     const [hexAddress, value] = decodeParams(transaction.data);
                     tx.to = "0x" + hexAddress.substr(2).toLowerCase() as Lowercase<string>
@@ -112,7 +116,8 @@ export function formatEth(transaction: TransactionResponse): TX {
                     methods.swapExactTokensForETH+'',
                     methods.swapExactETHForTokens+'',
                     methods.swapTokensForExactTokens+'',
-                    methods.swapExactTokensForTokens+''
+                    methods.swapExactTokensForTokens+'',
+                    methods.swapETHForExactTokens+''
                 ].includes(method)) {
                     tx.router = transaction.to.toLowerCase() as Lowercase<string>;
                     const res = face.pancakeRouterV2.parseTransaction(transaction)
