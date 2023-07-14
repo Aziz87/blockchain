@@ -117,6 +117,25 @@ export class Blockchain {
         return result.decimals;
     }
 
+
+
+    /**
+     * Multicall get tokens name, symbol and decimals
+     * @param net 
+     * @param tokens 
+     * @returns 
+     */
+    public async getTokensInfo(net:NET|number, tokens: string[]): Promise<{decimals:number[], symbol:string[], name:string[]}> {
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        const face = new Interface(erc20);
+        const decimals: MultiCallItem[] = tokens.map(target => ({ target, method: "decimals", arguments: [], face }))
+        const symbol: MultiCallItem[] = tokens.map(target => ({ target, method: "symbol", arguments: [], face }))
+        const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
+        const result = await multiCall(net, [...decimals,...symbol, ...name]);
+        return {decimals:result.decimals, symbol:result.symbol, name:result.name};
+    }
+
     public async getAmountOut(tokenIn: string, tokenOut: string, amountIn: number, netId: number): Promise<number> {
         const decimals = await this.getTokensDecimals([tokenIn, tokenOut], netId);
         const config = this.getConfig(netId);
