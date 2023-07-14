@@ -1,6 +1,5 @@
 import { Symbol, NET, NetworkName } from "./net.i";
-import { lower
- } from "src/utils/string";
+
 const Avalanche: NET = {
     id: 43114,
     name: NetworkName.AvalancheMainnet,
@@ -12,7 +11,7 @@ const Avalanche: NET = {
         block: 'https://snowtrace.io/block/'
     },
     rpc: { name: 'Avalanche Public PRC', url: 'https://avalanche-evm.publicnode.com/' },
-    multicall: lower("0xe86e3989c74293Acc962156cd3F525c07b6a1B6e"),
+    multicall: "0xe86e3989c74293acc962156cd3f525c07b6a1b6e",
     tornadoContracts: [{
         instances: [
             { amount: 10, address: '0x330bdFADE01eE9bF63C209Ee33102DD334618e0a' },
