@@ -365,7 +365,7 @@ export class Blockchain {
             const response = await this.getLimitter(netId).schedule(()=>multiCall(config, items));
             if(!response.getEthBalance) return null;
             const ethBalances = response.getEthBalance[config.multicall].map(x => Number(formatEther(x)));
-            const result: number[][] = [ethBalances,[]];
+            const result: number[][] = [ethBalances];
 
             for (let token of tokens) {
                 if(token.address===constants.AddressZero)continue;
