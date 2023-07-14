@@ -6,7 +6,6 @@ import  {TransactionResponse} from "@ethersproject/abstract-provider"
 const {AbiCoder, Interface} = utils;
 import abiPancakePair from "../abi/pancake-pair"
 import abiPancakeRouterV2 from "../abi/pancake-router-v2"
-import { TronMethods } from "../tron/tron-methods";
 import TronDecoder from "../tron/tron-decoder";
 import { Blockchain } from "src/blockchain";
 
@@ -76,6 +75,27 @@ export class TX {
     public hash: string;
     public error: string;
     public method: string;
+    public needDecode:boolean = false;
+
+
+
+    async decode(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
+        const decoder = new TronDecoder(net, bc)
+        const decoded = await decoder.decodeInput(transaction);
+
+        const _amountIn = decoded.inputNames.indexOf("amountIn");
+        const _amountInMax = decoded.inputNames.indexOf("amountInMax");
+        const _amountOut = decoded.inputNames.indexOf("amountOut");
+        const _amountOutMin = decoded.inputNames.indexOf("amountOutMin");
+        const _to = decoded.inputNames.indexOf("to");
+        const _path = decoded.inputNames.indexOf("path");
+
+        this.amountIn = _amountIn>-1 ? decoded.decodedInput[_amountIn] : _amountInMax>-1 ? decoded.decodedInput[_amountInMax] :0;
+        this.amountOut = _amountOut>-1 ? decoded.decodedInput[_amountOut] : _amountOutMin>-1 ? decoded.decodedInput[_amountOutMin] : 0;
+        this.tokens = _path>-1 ? decoded.decodedInput[_path].map(x=>fromHex(x).toLowerCase() as Lowercase<string>) : []
+        this.to = _to>-1 ? fromHex(decoded.decodedInput[_to]).toLowerCase() as Lowercase<string> : ""
+        return this;
+    }
 }
 
 export function formatEth(transaction: TransactionResponse): TX {
@@ -90,6 +110,7 @@ export function formatEth(transaction: TransactionResponse): TX {
             if (transaction.data === "0x") {
                 tx.to = transaction.to.toLowerCase() as Lowercase<string>;
                 tx.amountIn = transaction.value;
+                tx.amountOut = transaction.value;
             } else {
                 tx.tokens = [transaction.to.toLowerCase() as Lowercase<string>];
                 const method = transaction.data.substring(0, 10);
@@ -98,16 +119,19 @@ export function formatEth(transaction: TransactionResponse): TX {
                     const [hexAddress, value] = decodeParams(transaction.data);
                     tx.to = "0x" + hexAddress.substr(2).toLowerCase() as Lowercase<string>
                     tx.amountIn = value;
+                    tx.amountOut = value;
                 } else if (method === methods.transferFrom) {
                     const [sender, recipient, value] = decodeParams(transaction.data);
                     tx.from = "0x" + sender.substr(2).toLowerCase() as Lowercase<string>
                     tx.to = "0x" + recipient.substr(2).toLowerCase() as Lowercase<string>
                     tx.amountIn = value;
+                    tx.amountOut = value;
                 } else if (method === methods.addLiquidityETH) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
                     tx.tokens = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
                     tx.amountIn = amountETHMin;
+                    tx.amountOut = amountETHMin;
                 } else if ([
                     methods.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
                     methods.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
@@ -139,13 +163,23 @@ export function formatEth(transaction: TransactionResponse): TX {
 }
 
  
+export function parseDataAddresses(net:NET, transaction:BlockTransaction | TransactionResponse){
+
+    if(net.symbol===Symbol.TRX){
+        return (transaction as BlockTransaction).raw_data_hex.substring(10).match(/.{1,64}/g).filter(x=>x.substring(20,30)!=="0000000000").map(x=>fromHex("0x"+x.substring(24,64))) as Lowercase<string>[]
+    }else{
+        return (transaction as TransactionResponse).data.substring(10).match(/.{1,64}/g).filter(x=>x.substring(20,30)!=="0000000000").map(x=>"0x"+x.substring(24,64)) as Lowercase<string>[]
+
+    }
+}
 
 
-export async function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction):Promise<TX>{
+export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction):TX{
 
    
     const tronTx = new TX();
     tronTx.hash = transaction.txID;
+
     try {
         if (transaction.raw_data?.contract) {
             const contract = transaction.raw_data.contract[0];
@@ -170,6 +204,7 @@ export async function formatTron(net:NET, bc:Blockchain, transaction:BlockTransa
                     const amount = Number("0x" + arr.join(""))
                     tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.amountIn = amount;
+                    tronTx.amountOut = amount;
                 } else if (method === methods.transferFrom) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const from = fromHex("0x" + arr.splice(0, 40).join(""))
@@ -179,6 +214,7 @@ export async function formatTron(net:NET, bc:Blockchain, transaction:BlockTransa
                     tronTx.from = from.toLowerCase() as Lowercase<string>
                     tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.amountIn = amount;
+                    tronTx.amountOut = amount;
                 } else if (method === methods.approve) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
@@ -186,6 +222,7 @@ export async function formatTron(net:NET, bc:Blockchain, transaction:BlockTransa
                     const amount = Number("0x" + arr.join(""))
                     tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.amountIn = amount;
+                    tronTx.amountOut = amount;
                 } else if ([
                     methods.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
                     methods.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
@@ -194,22 +231,8 @@ export async function formatTron(net:NET, bc:Blockchain, transaction:BlockTransa
                     methods.swapTokensForExactTokens+'',
                     methods.swapExactTokensForTokens+''
                 ].includes(method)) {
-                    arr.splice(0, 24); // 000000000000000000000000
                     tronTx.router = fromHex(contract_address).toLowerCase() as Lowercase<string>;
-                    const decoder = new TronDecoder(net, bc)
-                    const decoded = await decoder.decodeInput(transaction);
-
-                    const _amountIn = decoded.inputNames.indexOf("amountIn");
-                    const _amountInMax = decoded.inputNames.indexOf("amountInMax");
-                    const _amountOut = decoded.inputNames.indexOf("amountOut");
-                    const _amountOutMin = decoded.inputNames.indexOf("amountOutMin");
-                    const _to = decoded.inputNames.indexOf("to");
-                    const _path = decoded.inputNames.indexOf("path");
-
-                    tronTx.amountIn = _amountIn>-1 ? decoded.decodedInput[_amountIn] : _amountInMax>-1 ? decoded.decodedInput[_amountInMax] : Number("0x" + arr.join(""));
-                    tronTx.amountOut = _amountOut>-1 ? decoded.decodedInput[_amountOut] : _amountOutMin>-1 ? decoded.decodedInput[_amountOutMin] : 0;
-                    tronTx.tokens = _path>-1 ? decoded.decodedInput[_path].map(x=>fromHex(x).toLowerCase() as Lowercase<string>) : []
-                    tronTx.to = _to>-1 ? decoded.decodedInput[_to] : ""
+                    tronTx.needDecode = true;
                 }
                 
                 else tronTx.error = "unknown data " + data

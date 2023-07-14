@@ -287,7 +287,7 @@ export class Blockchain {
     }
 
 
-    public async formatTX(net:NET, transaction:BlockTransaction|TransactionResponse):Promise<TX>{
+    public formatTX(net:NET, transaction:BlockTransaction|TransactionResponse):TX{
         return net.symbol === Symbol.TRX 
         ? formatTron(net, this, transaction as BlockTransaction)
         : formatEth(transaction as TransactionResponse);
