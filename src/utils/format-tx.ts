@@ -1,6 +1,6 @@
 import { BigNumberish,utils, } from "ethers"
 import * as TronWeb from "tronweb";
-import { CurrencySymbol, NET } from "../nets/net.i";
+import { Symbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
 const {AbiCoder, Interface} = utils;

@@ -1,7 +1,7 @@
 
 export interface TornatoContract {
     instances: { amount: number, address: string }[];
-    symbol: CurrencySymbol;//'ETH',
+    symbol: Symbol;//'ETH',
     decimals: number;//18
     tokenAddress?: string;
 }
@@ -20,7 +20,7 @@ export enum NetworkName {
     TronNile = 'Tron Nile',
 }
 
-export enum CurrencySymbol {
+export enum Symbol {
     ETH = 'ETH',
     WETH = 'WETH',
     BNB = 'BNB',
@@ -53,24 +53,25 @@ export interface IRPC {
     apiKey?: string;
 }
 
-export interface NetworkToken {
-    symbol: CurrencySymbol;
+export interface Token {
+    symbol: Symbol;
     decimals: number;
-    address: string
+    address: Lowercase<string>
 }
 
 export interface NET {
     id: number;//1
-    networkName: NetworkName// 'Ethereum Mainnet',
-    nativeCurrency: CurrencySymbol;//'eth',
+    name: NetworkName// 'Ethereum Mainnet',
+    symbol: Symbol;//'eth',
+    decimals:number;
     explorer: IExplorer;
     rpc: IRPC;//       { name: 'SecureRPC', url: 'https://api.securerpc.com/v1}
-    multicall: string;//'0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
+    multicall: Lowercase<string>;//'0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
     tornadoContracts: TornatoContract[];
     miningBlockSeconds: number;//15
-    uniswapRouter: string;
-    wrapedNativToken: NetworkToken;
-    tokens: NetworkToken[];
+    uniswapRouter: Lowercase<string>;
+    wrapedNativToken: Token;
+    tokens: Token[];
     requestsPerSecond:number;
 }
 

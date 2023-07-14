@@ -1,9 +1,10 @@
-import { CurrencySymbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName } from "./net.i";
 
 const Gnosis: NET = {
     id: 100,
-    networkName: NetworkName.GnosisChain,
-    nativeCurrency: CurrencySymbol.xDAI,
+    name: NetworkName.GnosisChain,
+    decimals:18,
+    symbol: Symbol.xDAI,
     explorer: {
         tx: 'https://blockscout.com/xdai/mainnet/tx/',
         address: 'https://blockscout.com/xdai/mainnet/address/',
@@ -17,12 +18,14 @@ const Gnosis: NET = {
             { amount: 1000, address: '0xdf231d99Ff8b6c6CBF4E9B9a945CBAcEF9339178' },
             { amount: 10000, address: '0xaf4c0B70B2Ea9FB7487C7CbB37aDa259579fe040' },
             { amount: 100000, address: '0xa5C2254e4253490C54cef0a4347fddb8f75A4998' }
-        ], symbol: CurrencySymbol.xDAI, decimals: 18
+        ], symbol: Symbol.xDAI, decimals: 18
     }],
     miningBlockSeconds: 5,
     wrapedNativToken: null,
     uniswapRouter: null,
-    tokens: [{ symbol: CurrencySymbol.USDT, decimals: 6, address: "0x4ECaBa5870353805a9F068101A40E0f32ed605C6" }],
+    tokens: [
+        { symbol: Symbol.USDT, decimals: 6, address: "0x4ecaba5870353805a9f068101a40e0f32ed605c6" }
+    ],
     requestsPerSecond:3
 }
 

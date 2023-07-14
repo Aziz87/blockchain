@@ -2,7 +2,7 @@ import Bottleneck from "bottleneck";
 import { providers } from "ethers";
 import { EventEmitter } from "stream";
 import nets from "../nets/net";
-import { CurrencySymbol, NET } from "../nets/net.i";
+import { Symbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
 import { TronMethods } from "../tron/tron-methods";
 const {JsonRpcProvider} = providers;
@@ -27,7 +27,7 @@ export default class NetParser extends EventEmitter {
         this.netId = netId;
         this.skipBlocks = skipBlocks;
         const config = this.getConfig(netId);
-        if (config.nativeCurrency === CurrencySymbol.TRX) {
+        if (config.symbol === Symbol.TRX) {
             this.tronMethods = new TronMethods(config);
             this.blockParseRange = TRON_BLOCKS_PARSE_RANGE;
         }
@@ -43,7 +43,7 @@ export default class NetParser extends EventEmitter {
     public async getBlockNumber(netId: number): Promise<number | null> {
         try {
             const config = this.getConfig(netId);
-            if (config.nativeCurrency === CurrencySymbol.TRX) {
+            if (config.symbol === Symbol.TRX) {
                 return await this.limitter.schedule(() => this.tronMethods.getBlockNumber())
             } else {
                 const provider = new JsonRpcProvider(config.rpc.url);
@@ -74,7 +74,7 @@ export default class NetParser extends EventEmitter {
     async parse(blockNumber: number, toBlockNumber?: number) {
         try {
             const config = this.getConfig(this.netId);
-            if (config.nativeCurrency === CurrencySymbol.TRX) {
+            if (config.symbol === Symbol.TRX) {
                 const blocks = await this.limitter.schedule(() => this.tronMethods.getBlockRange(blockNumber, toBlockNumber))
                 const transactions: BlockTransaction[] = blocks.map(x => x.transactions || []).reduce((a, b) => [...a, ...b], []);
                 // console.log(`${blockNumber} / ${toBlockNumber} [${transactions.length} txs]`)
