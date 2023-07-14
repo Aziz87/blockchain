@@ -74,9 +74,9 @@ export class TX {
     public amountOut: BigNumberish;
     public hash: string;
     public error: string;
-    public method: string;
+    public method: methods;
     public needDecode:boolean = false;
-
+    public static methods = methods;
 
 
     async decode(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
