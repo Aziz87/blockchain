@@ -125,7 +125,7 @@ export class Blockchain {
      * @param tokens 
      * @returns 
      */
-    public async getTokensInfo(net:NET|number, tokens: string[]): Promise<{decimals:number[], symbol:string[], name:string[]}> {
+    public async getTokensInfo(net:NET|number, tokens: Lowercase<string>[]): Promise<Token[]> {
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         const face = new Interface(erc20);
@@ -133,7 +133,8 @@ export class Blockchain {
         const symbol: MultiCallItem[] = tokens.map(target => ({ target, method: "symbol", arguments: [], face }))
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
         const result = await multiCall(net, [...decimals,...symbol, ...name]);
-        return {decimals:result.decimals, symbol:result.symbol, name:result.name};
+
+        return tokens.map((address,i)=>({address, decimals:result.decimals[i], symbol:result.symbol[i], name:result.name[i]}))
     }
 
     public async getAmountOut(tokenIn: string, tokenOut: string, amountIn: number, netId: number): Promise<number> {
