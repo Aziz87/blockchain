@@ -19,7 +19,8 @@ export function fromHex(hexAddress: string): string {
     return TronWeb.address.fromHex(hexAddress);
 }
 
-export enum methods {
+
+enum MethodCode {
     transfer = "0xa9059cbb",
     transferFrom = "0x23b872dd",
     addLiquidityETH = "0xf305d719",
@@ -34,8 +35,9 @@ export enum methods {
     swapExactETHForTokensSupportingFeeOnTransferTokens = "0xb6f9de95"
 }
 
+
 // @ts-ignore
-const methodsDecode = Object.assign(...Object.keys(methods).map(key => ({ [methods[key]]: key })))
+const methodsNames = Object.assign(...Object.keys(MethodCode).map(key => ({ [MethodCode[key]]: key })))
 
 /**
  * Декодирует заголовки метода контракта
@@ -74,9 +76,9 @@ export class TX {
     public amountOut: BigNumberish;
     public hash: string;
     public error: string;
-    public method: methods;
+    public method: MethodCode;
     public needDecode:boolean = false;
-    public static methods = methods;
+    public static methods = MethodCode;
 
 
     async decode(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
@@ -113,41 +115,41 @@ export function formatEth(transaction: TransactionResponse): TX {
                 tx.amountOut = transaction.value;
             } else {
                 tx.tokens = [transaction.to.toLowerCase() as Lowercase<string>];
-                const method = transaction.data.substring(0, 10);
-                tx.method = methodsDecode[method].split("_")[0] || method;
-                if (method === methods.transfer) {
+                const methodCode = transaction.data.substring(0, 10);
+                tx.method = methodsNames[methodCode].split("_")[0] || methodCode;
+                if (methodCode === MethodCode.transfer) {
                     const [hexAddress, value] = decodeParams(transaction.data);
                     tx.to = "0x" + hexAddress.substr(2).toLowerCase() as Lowercase<string>
                     tx.amountIn = value;
                     tx.amountOut = value;
-                } else if (method === methods.transferFrom) {
+                } else if (methodCode === MethodCode.transferFrom) {
                     const [sender, recipient, value] = decodeParams(transaction.data);
                     tx.from = "0x" + sender.substr(2).toLowerCase() as Lowercase<string>
                     tx.to = "0x" + recipient.substr(2).toLowerCase() as Lowercase<string>
                     tx.amountIn = value;
                     tx.amountOut = value;
-                } else if (method === methods.addLiquidityETH) {
+                } else if (methodCode === MethodCode.addLiquidityETH) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
                     tx.tokens = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
                     tx.amountIn = amountETHMin;
                     tx.amountOut = amountETHMin;
                 } else if ([
-                    methods.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
-                    methods.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
-                    methods.swapExactTokensForETH+'',
-                    methods.swapExactETHForTokens+'',
-                    methods.swapTokensForExactTokens+'',
-                    methods.swapExactTokensForTokens+'',
-                    methods.swapETHForExactTokens+''
-                ].includes(method)) {
+                    MethodCode.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
+                    MethodCode.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
+                    MethodCode.swapExactTokensForETH+'',
+                    MethodCode.swapExactETHForTokens+'',
+                    MethodCode.swapTokensForExactTokens+'',
+                    MethodCode.swapExactTokensForTokens+'',
+                    MethodCode.swapETHForExactTokens+''
+                ].includes(methodCode)) {
                     tx.router = transaction.to.toLowerCase() as Lowercase<string>;
                     const res = face.pancakeRouterV2.parseTransaction(transaction)
                     tx.amountIn = res.args.amountIn || res.args.amountInMax || transaction.value;
                     tx.amountOut = res.args.amountOutMin || res.args.amountOut;
                     tx.tokens = res.args.path.map(x=>x.toLowerCase());
                     tx.to = res.args.to.toLowerCase();
-                } else if (method === methods.stake) {
+                } else if (methodCode === MethodCode.stake) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
                     tx.tokens = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
@@ -192,20 +194,20 @@ export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction)
                 const {owner_address, contract_address} = transaction.raw_data.contract[0].parameter.value;
                 tronTx.from = fromHex(owner_address).toLowerCase() as Lowercase<string>
                 tronTx.tokens = [fromHex(contract_address).toLowerCase() as Lowercase<string>]
-                const method = data.substring(0, 10);
+                const methodCode = data.substring(0, 10);
 
-                tronTx.method = methodsDecode[method] || method;
+                tronTx.method = methodsNames[methodCode].split("_")[0] || methodCode;
                 const arr = data.split("");
                 arr.splice(0, 10).join(""); //method 
                 
-                if (method === methods.transfer) {
+                if (methodCode === MethodCode.transfer) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
                     const amount = Number("0x" + arr.join(""))
                     tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.amountIn = amount;
                     tronTx.amountOut = amount;
-                } else if (method === methods.transferFrom) {
+                } else if (methodCode === MethodCode.transferFrom) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const from = fromHex("0x" + arr.splice(0, 40).join(""))
                     arr.splice(0, 24); // 000000000000000000000000
@@ -215,7 +217,7 @@ export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction)
                     tronTx.to = to.toLowerCase() as Lowercase<string>
                     tronTx.amountIn = amount;
                     tronTx.amountOut = amount;
-                } else if (method === methods.approve) {
+                } else if (methodCode === MethodCode.approve) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
                     arr.splice(0, 24); // 000000000000000000000000
@@ -224,13 +226,13 @@ export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction)
                     tronTx.amountIn = amount;
                     tronTx.amountOut = amount;
                 } else if ([
-                    methods.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
-                    methods.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
-                    methods.swapExactTokensForETH+'',
-                    methods.swapExactETHForTokens+'',
-                    methods.swapTokensForExactTokens+'',
-                    methods.swapExactTokensForTokens+''
-                ].includes(method)) {
+                    MethodCode.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
+                    MethodCode.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
+                    MethodCode.swapExactTokensForETH+'',
+                    MethodCode.swapExactETHForTokens+'',
+                    MethodCode.swapTokensForExactTokens+'',
+                    MethodCode.swapExactTokensForTokens+''
+                ].includes(methodCode)) {
                     tronTx.router = fromHex(contract_address).toLowerCase() as Lowercase<string>;
                     tronTx.needDecode = true;
                 }

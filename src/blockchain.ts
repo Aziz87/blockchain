@@ -275,7 +275,6 @@ export class Blockchain {
             // Get final transaction value
             const value = balance.sub(estimatedTxFee);
             //console.log('send tx, value ', value)
-
             
             const tx = await this.getLimitter(netId).schedule({priority:4},()=> wallet.sendTransaction({ value, to }));
             // const receipt = await this.getLimitter(netId).schedule({priority:4},()=> tx.wait());
@@ -285,7 +284,6 @@ export class Blockchain {
             return null;
         }
     }
-
 
     public formatTX(net:NET, transaction:BlockTransaction|TransactionResponse):TX{
         return net.symbol === Symbol.TRX 
