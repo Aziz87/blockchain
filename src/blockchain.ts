@@ -34,7 +34,7 @@ const valid = function(net:NET|number, address:string):boolean{
 }
 
 export {
-    NET, Token as NetworkToken, NetworkName, Symbol as CurrencySymbol, TX, NetParser,
+    NET, Token , NetworkName, Symbol, TX, NetParser,
     crypto, valid, net,
 }
 
