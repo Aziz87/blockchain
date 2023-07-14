@@ -17,7 +17,7 @@ import {formatTron,formatEth, TX} from "./utils/format-tx"
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
 import { BlockTransaction } from "./tron/interfaces";
 import { TronTransaction } from "./tron/tron-methods-d";
-
+import { constants } from "ethers";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -122,8 +122,12 @@ export class Blockchain {
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
 
+        
+
         const detectedInCacke:Token[] = [];
-        for(let t of tokens) if(Blockchain.tokensCache[t]) detectedInCacke.push(Blockchain.tokensCache[t]);
+        for(let t of tokens) {
+            if(Blockchain.tokensCache[t]) detectedInCacke.push(Blockchain.tokensCache[t]);
+        }
         if(detectedInCacke.length===tokens.length) return detectedInCacke;
 
         const face = new Interface(erc20);
@@ -131,7 +135,7 @@ export class Blockchain {
         const symbol: MultiCallItem[] = tokens.map(target => ({ target, method: "symbol", arguments: [], face }))
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, [...decimals,...symbol, ...name]));
-        const tkns = tokens.map((address,i)=>({address, decimals:result.decimals[i], symbol:result.symbol[i], name:result.name[i]}))
+        const tkns = tokens.map((address,i)=>({address, decimals:result.decimals[i], symbol:(address===constants.AddressZero?(net as NET).symbol: result.symbol[i]), name:(address===constants.AddressZero?"": result.name[i])}))
         if(caching){
             for(let i=0;i<tkns.length;i++){
                 Blockchain.tokensCache[tkns[i].address]=tkns[i];
