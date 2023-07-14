@@ -118,7 +118,7 @@ export class Blockchain {
      * @param tokens 
      * @returns 
      */
-    public async getTokensInfo(net:NET|number, tokens: Lowercase<string>[]): Promise<Token[]> {
+    public async getTokensInfo(net:NET|number, tokens: Lowercase<string>[], caching:boolean): Promise<Token[]> {
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
 
@@ -132,14 +132,16 @@ export class Blockchain {
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, [...decimals,...symbol, ...name]));
         const tkns = tokens.map((address,i)=>({address, decimals:result.decimals[i], symbol:result.symbol[i], name:result.name[i]}))
-        for(let i=0;i<tkns.length;i++){
-            Blockchain.tokensCache[tkns[i].address]=tkns[i];
+        if(caching){
+            for(let i=0;i<tkns.length;i++){
+                Blockchain.tokensCache[tkns[i].address]=tkns[i];
+            }
         }
         return tkns;
     }
 
     public async getAmountOut(tokenIn: Lowercase<string>, tokenOut: Lowercase<string>, amountIn: number, netId: number): Promise<number> {
-        const tokens = await this.getTokensInfo(netId,[tokenIn, tokenOut]);
+        const tokens = await this.getTokensInfo(netId,[tokenIn, tokenOut],true);
         const config = this.getConfig(netId);
         const contract = new Contract(config.uniswapRouter, pancakeRouterV2)
         const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', tokens[0].decimals), [tokenIn, tokenOut]);
@@ -147,7 +149,7 @@ export class Blockchain {
     }
 
     public async getTokensPriceUSD(tokens: Lowercase<string>[], netId: number) {
-        const tkns = await this.getTokensInfo(netId, tokens);
+        const tkns = await this.getTokensInfo(netId, tokens,true);
         const config = this.getConfig(netId);
         const USDT = config.tokens.find(x => x.symbol === Symbol.USDT)
         const face = new Interface(pancakeRouterV2)
