@@ -352,6 +352,7 @@ export class Blockchain {
                 return res;
             }
 
+
             const faceMulticall = new Interface(MULTICALL)
             const faceERC = new Interface(erc20)
             const items: MultiCallItem[] = addresses.map(address => ({ target: config.multicall, method: "getEthBalance", arguments: [address], face: faceMulticall }))
@@ -359,18 +360,20 @@ export class Blockchain {
                 for (let address of addresses)
                     items.push({ target: token.address, method: "balanceOf", arguments: [address], face: faceERC })
             }
+
             const response = await this.getLimitter(netId).schedule(()=>multiCall(config, items));
             if(!response.getEthBalance) return null;
             const ethBalances = response.getEthBalance[config.multicall].map(x => Number(formatEther(x)));
-            const result: number[][] = [ethBalances];
+            const result: number[][] = [ethBalances,[]];
 
             for (let token of tokens) {
+                if(token.address===constants.AddressZero)continue;
                 result.push(response.balanceOf[token.address].map(x => Number(formatUnits(x, token.decimals))));
             }
 
             return result;
         } catch (err) {
-            // console.error(err, "balance checker")
+            console.error(err, "balance checker")
             return null;
         }
     }

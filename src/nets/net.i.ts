@@ -57,6 +57,7 @@ export interface Token {
     symbol: Symbol;
     decimals: number;
     address: Lowercase<string>
+    name?:string;
 }
 
 export interface NET {
