@@ -57,6 +57,9 @@ export interface SendDto {
 }
 
 export class Blockchain {
+
+    public static tokensCache:Token[] = [];
+
     constructor() {
         this.updateBinancePrices();
     }
@@ -109,16 +112,6 @@ export class Blockchain {
         return nets.find(x => x.id + '' === netId + '');
     }
 
-    public async getTokensDecimals(tokens: string[], netId: number): Promise<number[]> {
-        const config = this.getConfig(netId);
-        const face = new Interface(erc20);
-        const items: MultiCallItem[] = tokens.map(target => ({ target, method: "decimals", arguments: [], face }))
-        const result = await multiCall(config, items);
-        return result.decimals;
-    }
-
-
-
     /**
      * Multicall get tokens name, symbol and decimals
      * @param net 
@@ -128,30 +121,38 @@ export class Blockchain {
     public async getTokensInfo(net:NET|number, tokens: Lowercase<string>[]): Promise<Token[]> {
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
+
+        const detectedInCacke:Token[] = [];
+        for(let t of tokens) if(Blockchain.tokensCache[t]) detectedInCacke.push(Blockchain.tokensCache[t]);
+        if(detectedInCacke.length===tokens.length) return detectedInCacke;
+
         const face = new Interface(erc20);
         const decimals: MultiCallItem[] = tokens.map(target => ({ target, method: "decimals", arguments: [], face }))
         const symbol: MultiCallItem[] = tokens.map(target => ({ target, method: "symbol", arguments: [], face }))
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
-        const result = await multiCall(net, [...decimals,...symbol, ...name]);
-
-        return tokens.map((address,i)=>({address, decimals:result.decimals[i], symbol:result.symbol[i], name:result.name[i]}))
+        const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, [...decimals,...symbol, ...name]));
+        const tkns = tokens.map((address,i)=>({address, decimals:result.decimals[i], symbol:result.symbol[i], name:result.name[i]}))
+        for(let i=0;i<tkns.length;i++){
+            Blockchain.tokensCache[tkns[i].address]=tkns[i];
+        }
+        return tkns;
     }
 
-    public async getAmountOut(tokenIn: string, tokenOut: string, amountIn: number, netId: number): Promise<number> {
-        const decimals = await this.getTokensDecimals([tokenIn, tokenOut], netId);
+    public async getAmountOut(tokenIn: Lowercase<string>, tokenOut: Lowercase<string>, amountIn: number, netId: number): Promise<number> {
+        const tokens = await this.getTokensInfo(netId,[tokenIn, tokenOut]);
         const config = this.getConfig(netId);
         const contract = new Contract(config.uniswapRouter, pancakeRouterV2)
-        const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', decimals[0]), [tokenIn, tokenOut]);
-        return Number(formatUnits(amountOut, decimals[1]));
+        const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', tokens[0].decimals), [tokenIn, tokenOut]);
+        return Number(formatUnits(amountOut, tokens[1].decimals));
     }
 
-    public async getTokensPriceUSD(tokens: string[], netId: number) {
-        const decimals = await this.getTokensDecimals(tokens, netId);
+    public async getTokensPriceUSD(tokens: Lowercase<string>[], netId: number) {
+        const tkns = await this.getTokensInfo(netId, tokens);
         const config = this.getConfig(netId);
         const USDT = config.tokens.find(x => x.symbol === Symbol.USDT)
         const face = new Interface(pancakeRouterV2)
-        const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouter, method: "getAmountsOut", arguments: [parseUnits("1", decimals[i]), [address, USDT.address]], face }))
-        const result = await multiCall(config, items);
+        const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouter, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, USDT.address]], face }))
+        const result = await this.getLimitter(netId).schedule(()=> multiCall(config, items));
         return result;
     }
 
@@ -345,7 +346,7 @@ export class Blockchain {
                 for (let address of addresses)
                     items.push({ target: token.address, method: "balanceOf", arguments: [address], face: faceERC })
             }
-            const response = await multiCall(config, items);
+            const response = await this.getLimitter(netId).schedule(()=>multiCall(config, items));
             if(!response.getEthBalance) return null;
             const ethBalances = response.getEthBalance[config.multicall].map(x => Number(formatEther(x)));
             const result: number[][] = [ethBalances];
