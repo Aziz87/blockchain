@@ -1,6 +1,6 @@
 import { Symbol, NET, NetworkName } from "./net.i";
-import {constants} from "ethers"
-import { lower } from "src/utils/string";
+
+
 
 const Arbitrum: NET = {
     id: 42161,
@@ -13,7 +13,7 @@ const Arbitrum: NET = {
         block: 'https://arbiscan.io/block/'
     },
     rpc: { name: 'Arbitrum RPC', url: 'https://arb1.arbitrum.io/rpc/' },
-    multicall: lower("0x842eC2c7D803033Edf55E478F461FC547Bc54EB2"),
+    multicall: "0x842ec2c7d803033edf55e478f461fc547bc54eb2",
     tornadoContracts: [{
         instances: [
             { amount: 0.1, address: '0x84443CFd09A48AF6eF360C6976C5392aC5023a1F' },
