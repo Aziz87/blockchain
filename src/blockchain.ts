@@ -135,11 +135,18 @@ export class Blockchain {
         const symbol: MultiCallItem[] = tokens.map(target => ({ target, method: "symbol", arguments: [], face }))
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, [...decimals,...symbol, ...name]));
-        const tkns = tokens.map((address,i)=>({address, decimals:(address===constants.AddressZero?(net as NET).decimals: result.decimals[i]), symbol:(address===constants.AddressZero?(net as NET).symbol: result.symbol[i]), name:(address===constants.AddressZero?"": result.name[i])}))
-        if(caching){
-            for(let i=0;i<tkns.length;i++){
-                Blockchain.tokensCache[tkns[i].address]=tkns[i];
-            }
+        const tkns = [];
+        for(let t = 0; t<tokens.length;t++){
+            const address = tokens[t];
+            const token = {
+                address,
+                decimals: address===constants.AddressZero ? net.decimals : result.decimals[t],
+                symbol: address===constants.AddressZero ? net.symbol : result.symbol[t],
+                name: address===constants.AddressZero ? net.name : result.name[t]
+            };
+           
+            if(caching) Blockchain.tokensCache[address]=token;
+            tkns.push(token)
         }
         return tkns;
     }
