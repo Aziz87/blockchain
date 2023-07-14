@@ -17,7 +17,7 @@ import {formatTron,formatEth, TX} from "./utils/format-tx"
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
 import { BlockTransaction } from "./tron/interfaces";
 import { TronTransaction } from "./tron/tron-methods-d";
-import { lower } from "./utils/string";
+
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -27,10 +27,7 @@ const {JsonRpcProvider} =ethers.providers;
 const lib = {
     nets, multiCall
 }
-
- const utils = {
-    lower
-}
+ 
 
 
 const valid = function(net:NET|number, address:string):boolean{
@@ -40,7 +37,7 @@ const valid = function(net:NET|number, address:string):boolean{
 
 export {
     NET, Token , NetworkName, Symbol, TX, NetParser,
-    crypto, valid, net, utils, lib
+    crypto, valid, net, lib
 }
 
 export interface SendTokenDto {
