@@ -152,14 +152,6 @@ export class Blockchain {
         return tkns;
     }
 
-    public async getAmountOut(tokenIn: Lowercase<string>, tokenOut: Lowercase<string>, amountIn: number, netId: number): Promise<number> {
-        const tokens = await this.getTokensInfo(netId,[tokenIn, tokenOut],true);
-        const config = this.getConfig(netId);
-        const contract = new Contract(config.uniswapRouter, pancakeRouterV2)
-        const amountOut = await contract.getAmountsOut(parseUnits(amountIn + '', tokens[0].decimals), [tokenIn, tokenOut]);
-        return Number(formatUnits(amountOut, tokens[1].decimals));
-    }
-
     public async getTokensPriceUSD(tokens: Lowercase<string>[], netId: number) {
         const tkns = await this.getTokensInfo(netId, tokens,true);
         const config = this.getConfig(netId);
@@ -418,108 +410,63 @@ export class Blockchain {
     }
 
 
-    public async swapETHForExactTokens(net:NET|number, privateKey:string, value:BigNumber, amountOut:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
+    public getUniswapContract(net:NET|number, privateKey?:string){
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         if(net.symbol===Symbol.TRX){
-            return null;
+            throw new Error("Network not Supported")
         }else{
             const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            if(!to)to=wallet.address;
-            if(!deadline)deadline=new Date().getTime();
-            const contract = new Contract(net.uniswapRouter, pancakeRouterV2, wallet);
-            return await contract.swapETHForExactTokens(amountOut, path, to, deadline, {value});
+            return privateKey
+            ? new Contract(net.uniswapRouter, pancakeRouterV2, new Wallet(privateKey, provider))
+            : new Contract(net.uniswapRouter, pancakeRouterV2, provider)
         }
     }
 
 
+    public async swapETHForExactTokens(net:NET|number, privateKey:string, value:BigNumber, amountOut:BigNumber, path:string[],to:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getUniswapContract(net, privateKey);
+            if(!deadline)deadline=new Date().getTime();
+            return await contract.swapETHForExactTokens(amountOut, path, to, deadline, {value});
+    }
+
 
     public async swapExactETHForTokens(net:NET|number, privateKey:string, value:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
-        else net = net as NET;
-        if(net.symbol===Symbol.TRX){
-            return null;
-        }else{
-            const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            if(!to)to=wallet.address;
+            const contract = this.getUniswapContract(net, privateKey);
             if(!deadline)deadline=new Date().getTime();
-            const contract = new Contract(net.uniswapRouter, pancakeRouterV2, wallet);
             return await contract.swapETHForExactTokens(amountOutMin, path, to, deadline, {value});
-        }
     }
 
 
 
     public async swapExactTokensForTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
-        else net = net as NET;
-        if(net.symbol===Symbol.TRX){
-            return null;
-        }else{
-            const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            if (!to) to=wallet.address;
+            const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            const contract = new Contract(net.uniswapRouter, pancakeRouterV2, wallet);
             return await contract.swapETHForExactTokens(amountIn, amountOutMin, path, to, deadline);
-        }
     }
 
 
 
     public async swapTokensForExactTokens(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
-        else net = net as NET;
-        if(net.symbol===Symbol.TRX){
-            return null;
-        }else{
-            const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            if (!to) to=wallet.address;
+            const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            const contract = new Contract(net.uniswapRouter, pancakeRouterV2, wallet);
             return await contract.swapETHForExactTokens(amountOut, amountInMax, path, to, deadline);
-        }
     }
 
 
     public async swapTokensForExactETH(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
-        else net = net as NET;
-        if(net.symbol===Symbol.TRX){
-            return null;
-        }else{
-            const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            if (!to) to=wallet.address;
+            const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            const contract = new Contract(net.uniswapRouter, pancakeRouterV2, wallet);
             return await contract.swapETHForExactTokens(amountOut, amountInMax, path, to, deadline);
-        }
     }
 
 
 
     public async swapExactTokensForETH(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
-        else net = net as NET;
-        if(net.symbol===Symbol.TRX){
-            return null;
-        }else{
-            const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            if (!to) to=wallet.address;
+            const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            const contract = new Contract(net.uniswapRouter, pancakeRouterV2, wallet);
             return await contract.swapETHForExactTokens(amountIn, amountOutMin, path, to, deadline);
-        }
     }
-
-
-
-
 
     public async approveToken<T>(net:NET|number, privateKey:string, tokenAddress:string, spender:string, amount:number):Promise<T>{
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
@@ -532,6 +479,22 @@ export class Blockchain {
             const contract = new Contract(tokenAddress, erc20, wallet);
             return await contract.approve(spender, amount);
         }
+    }
+
+    public async getAmountsIn(net:NET|number, amountOut:BigNumberish, path:string[]):Promise<BigNumberish[]>{
+        return await this.getUniswapContract(net).getAmountsIn(amountOut, path);
+    }
+
+    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, path:string[]):Promise<BigNumberish[]>{
+        return await this.getUniswapContract(net).getAmountsOut(amountIn, path);
+    }
+
+    public async getAmountIn(net:NET|number, amountOut:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish):Promise<BigNumberish>{
+        return await this.getUniswapContract(net).getAmountIn(amountOut, reserveIn, reserveOut);
+    }
+
+    public async getAmountOut(net:NET|number, amountIn:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish):Promise<BigNumberish>{
+        return await this.getUniswapContract(net).etAmountOut(amountIn, reserveIn, reserveOut);
     }
 
 
