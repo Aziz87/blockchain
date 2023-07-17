@@ -434,7 +434,7 @@ export class Blockchain {
     public async swapExactETHForTokens(net:NET|number, privateKey:string, value:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getUniswapContract(net, privateKey);
             if(!deadline)deadline=new Date().getTime();
-            return await contract.swapETHForExactTokens(amountOutMin, path, to, deadline, {value});
+            return await contract.swapExactETHForTokens(amountOutMin, path, to, deadline, {value});
     }
 
 
