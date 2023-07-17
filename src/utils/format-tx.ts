@@ -1,4 +1,4 @@
-import { BigNumberish,utils, } from "ethers"
+import { BigNumberish,constants,utils, } from "ethers"
 import * as TronWeb from "tronweb";
 import { Symbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
@@ -71,7 +71,7 @@ export class TX {
     public router: Lowercase<string>;
     public from: Lowercase<string>;
     public to: Lowercase<string>;
-    public tokens: Lowercase<string>[];
+    public path: Lowercase<string>[];
     public amountIn: BigNumberish;
     public amountOut: BigNumberish;
     public hash: string;
@@ -94,7 +94,7 @@ export class TX {
 
         this.amountIn = _amountIn>-1 ? decoded.decodedInput[_amountIn] : _amountInMax>-1 ? decoded.decodedInput[_amountInMax] :0;
         this.amountOut = _amountOut>-1 ? decoded.decodedInput[_amountOut] : _amountOutMin>-1 ? decoded.decodedInput[_amountOutMin] : 0;
-        this.tokens = _path>-1 ? decoded.decodedInput[_path].map(x=>fromHex(x).toLowerCase() as Lowercase<string>) : []
+        this.path = _path>-1 ? decoded.decodedInput[_path].map(x=>fromHex(x).toLowerCase() as Lowercase<string>) : []
         this.to = _to>-1 ? fromHex(decoded.decodedInput[_to]).toLowerCase() as Lowercase<string> : ""
         return this;
     }
@@ -113,8 +113,9 @@ export function formatEth(transaction: TransactionResponse): TX {
                 tx.to = transaction.to.toLowerCase() as Lowercase<string>;
                 tx.amountIn = transaction.value;
                 tx.amountOut = transaction.value;
+                tx.path = []
             } else {
-                tx.tokens = [transaction.to.toLowerCase() as Lowercase<string>];
+                tx.path = [];
                 const methodCode = transaction.data.substring(0, 10);
                 tx.method = methodsNames[methodCode].split("_")[0] || methodCode;
                 if (methodCode === MethodCode.transfer) {
@@ -131,7 +132,7 @@ export function formatEth(transaction: TransactionResponse): TX {
                 } else if (methodCode === MethodCode.addLiquidityETH) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
-                    tx.tokens = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
+                    tx.path = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
                     tx.amountIn = amountETHMin;
                     tx.amountOut = amountETHMin;
                 } else if ([
@@ -147,12 +148,12 @@ export function formatEth(transaction: TransactionResponse): TX {
                     const res = face.pancakeRouterV2.parseTransaction(transaction)
                     tx.amountIn = res.args.amountIn || res.args.amountInMax || transaction.value;
                     tx.amountOut = res.args.amountOutMin || res.args.amountOut;
-                    tx.tokens = res.args.path.map(x=>x.toLowerCase());
+                    tx.path = res.args.path.map(x=>x.toLowerCase());
                     tx.to = res.args.to.toLowerCase();
                 } else if (methodCode === MethodCode.stake) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
-                    tx.tokens = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
+                    tx.path = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
                     tx.amountIn = amountETHMin;
                 }
             }
@@ -193,7 +194,7 @@ export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction)
                 const data = "0x" + contract.parameter?.value?.data;
                 const {owner_address, contract_address} = transaction.raw_data.contract[0].parameter.value;
                 tronTx.from = fromHex(owner_address).toLowerCase() as Lowercase<string>
-                tronTx.tokens = [fromHex(contract_address).toLowerCase() as Lowercase<string>]
+                tronTx.path = [fromHex(contract_address).toLowerCase() as Lowercase<string>]
                 const methodCode = data.substring(0, 10);
 
                 tronTx.method = methodsNames[methodCode].split("_")[0] || methodCode;
