@@ -19,6 +19,20 @@ export function fromHex(hexAddress: string): string {
     return TronWeb.address.fromHex(hexAddress);
 }
 
+enum Method {
+    transfer = "transfer",
+    transferFrom = "transferFrom",
+    addLiquidityETH = "addLiquidityETH",
+    stake = "stake",
+    approve = "approve",
+    swapExactTokensForTokens = "swapExactTokensForTokens",
+    swapTokensForExactTokens = "swapTokensForExactTokens",
+    swapExactETHForTokens = "swapExactETHForTokens",
+    swapExactTokensForETH = "swapExactTokensForETH",
+    swapETHForExactTokens = "swapETHForExactTokens",
+    swapExactTokensForETHSupportingFeeOnTransferTokens = "swapExactTokensForETHSupportingFeeOnTransferTokens",
+    swapExactETHForTokensSupportingFeeOnTransferTokens = "swapExactETHForTokensSupportingFeeOnTransferTokens",
+}
 
 enum MethodCode {
     transfer = "0xa9059cbb",
@@ -34,6 +48,7 @@ enum MethodCode {
     swapExactTokensForETHSupportingFeeOnTransferTokens = "0x791ac947",
     swapExactETHForTokensSupportingFeeOnTransferTokens = "0xb6f9de95"
 }
+
 
 
 // @ts-ignore
@@ -76,9 +91,10 @@ export class TX {
     public amountOut: BigNumberish;
     public hash: string;
     public error: string;
-    public method: MethodCode;
+    public method: Method;
     public needDecode:boolean = false;
-    public static methods = MethodCode;
+    public static methods = Method;
+    public static methodsCodes = MethodCode;
 
 
     async decode(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
