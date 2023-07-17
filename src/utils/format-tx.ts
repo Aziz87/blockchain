@@ -30,6 +30,7 @@ enum Method {
     swapExactETHForTokens = "swapExactETHForTokens",
     swapExactTokensForETH = "swapExactTokensForETH",
     swapETHForExactTokens = "swapETHForExactTokens",
+    swapTokensForExactETH = "swapTokensForExactETH",
     swapExactTokensForETHSupportingFeeOnTransferTokens = "swapExactTokensForETHSupportingFeeOnTransferTokens",
     swapExactETHForTokensSupportingFeeOnTransferTokens = "swapExactETHForTokensSupportingFeeOnTransferTokens",
 }
@@ -43,6 +44,7 @@ enum MethodCode {
     swapExactTokensForTokens = "0x38ed1739",
     swapTokensForExactTokens = "0x8803dbee",
     swapExactETHForTokens = "0x7ff36ab5",
+    swapTokensForExactETH = "0x4a25d94a",
     swapExactTokensForETH = "0x18cbafe5",
     swapETHForExactTokens = "0xfb3bdb41",
     swapExactTokensForETHSupportingFeeOnTransferTokens = "0x791ac947",
