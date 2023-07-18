@@ -433,7 +433,7 @@ export class Blockchain {
     public async swapExactTokensForTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            return await contract.swapETHForExactTokens(amountIn, amountOutMin, path, to, deadline);
+            return await contract.swapETHForswapExactTokensForTokensExactTokens(amountIn, amountOutMin, path, to, deadline);
     }
 
 
@@ -441,14 +441,14 @@ export class Blockchain {
     public async swapTokensForExactTokens(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            return await contract.swapETHForExactTokens(amountOut, amountInMax, path, to, deadline);
+            return await contract.swapTokensForExactTokens(amountOut, amountInMax, path, to, deadline);
     }
 
 
     public async swapTokensForExactETH(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            return await contract.swapETHForExactTokens(amountOut, amountInMax, path, to, deadline);
+            return await contract.swapTokensForExactETH(amountOut, amountInMax, path, to, deadline);
     }
 
 
@@ -456,7 +456,7 @@ export class Blockchain {
     public async swapExactTokensForETH(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getUniswapContract(net, privateKey);
             if (!deadline) deadline=new Date().getTime();
-            return await contract.swapETHForExactTokens(amountIn, amountOutMin, path, to, deadline);
+            return await contract.swapExactTokensForETH(amountIn, amountOutMin, path, to, deadline);
     }
 
     public async getAllowance(net:NET|number, tokenAddress:string, ownerAddress: string, spenderAddress: string ): Promise<BigNumberish> {
