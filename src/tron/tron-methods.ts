@@ -1,9 +1,10 @@
 import axios from "axios";
 import * as TronWeb from "tronweb";
-import {utils} from "ethers"
+import {BigNumber, utils} from "ethers"
 import { NET } from "../nets/net.i";
 import { BlockInfo } from "./interfaces";
 import { TronTransactionInfo, TronHistoryElement, TronTransaction } from "./tron-methods-d"
+import erc20 from "src/abi/erc20";
 
 export function toHex(str) {
     return TronWeb.address.toHex(str);
@@ -88,18 +89,24 @@ export class TronMethods {
     }
 
     async sendToken(
-        privateKeyFrom: string,
+        privateKey: string,
         to: string,
         amount: number,
         tokenAddress: string,
         tokenDecimals: number
     ): Promise<{ hash: string; amount: number }> {
 
-        
 
+        const tronWeb =  new TronWeb({
+            fullHost: this.net.rpc.url,
+            solidityNode: this.net.rpc.url,
+            headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
+            privateKey
+        });
+        
         // console.log("amount " + amount + " gasPrice " + gasPrice + ", gasLimit " + gasLimit, "TRX")
         try {
-            const { transfer } = await this.tronWeb.contract().at(tokenAddress);
+            const { transfer } = await tronWeb.contract().at(tokenAddress);
             const value = (amount * Number("1e" + tokenDecimals)).toFixed();
             const hash = await transfer(to, value).send();
             return { hash, amount };
@@ -231,6 +238,33 @@ export class TronMethods {
         }
     }
 
+
+    public async allowance(tokenAddress:string, ownerAddress: string, spenderAddress: string ): Promise<any> {
+        const contract = await this.tronWeb.contract(
+            erc20,
+            tokenAddress
+        );
+        this.tronWeb.setAddress(tokenAddress);
+        return await contract.methods.allowance(ownerAddress, spenderAddress).call()
+    }
+
+
+
+    public async approve( privateKey: string, tokenAddress:string, spenderAddress: string, amount:BigNumber ): Promise<any> {
+        const tronWeb =  new TronWeb({
+            fullHost: this.net.rpc.url,
+            solidityNode: this.net.rpc.url,
+            headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
+            privateKey
+        });
+            const contract = await tronWeb.contract().at(tokenAddress);
+            await contract.approve(spenderAddress , amount).send().then( (hash)=> {
+                console.log('user Approved',hash)
+            }).catch(err => {
+                console.log('user cancle Approved')
+            })
+
+    }
 
     //----- DECODER
 
