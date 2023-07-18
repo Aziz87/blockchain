@@ -4,7 +4,7 @@ import {BigNumber, utils} from "ethers"
 import { NET } from "../nets/net.i";
 import { BlockInfo } from "./interfaces";
 import { TronTransactionInfo, TronHistoryElement, TronTransaction } from "./tron-methods-d"
-import erc20 from "src/abi/erc20";
+import erc20 from "../abi/erc20";
 
 export function toHex(str) {
     return TronWeb.address.toHex(str);

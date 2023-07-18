@@ -177,13 +177,13 @@ export class Blockchain {
         }
     }
 
-    public static getPrice(symbol: string): number {
+    public static getPriceFromBinance(symbol: string): number {
         const price = Blockchain.binancePrices.find(x => x.symbol === symbol.toUpperCase())?.price
         return Number(price || 0)
     }
 
-    public getPrice(symbol: string): number {
-        return Blockchain.getPrice(symbol)
+    public getPriceFromBinance(symbol: string): number {
+        return Blockchain.getPriceFromBinance(symbol)
     }
 
     public async getTransaction(net:NET|number, hash:string){
