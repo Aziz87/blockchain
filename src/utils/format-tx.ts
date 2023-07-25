@@ -137,7 +137,7 @@ export function formatEth(transaction: TransactionResponse): TX {
 
 
     let routerFace = face.pancakeRouterV2;
-    if(nets.map(n=>n.uniswapRouterV3).includes(transaction.to.toLowerCase() as Lowercase<string>)){
+    if(transaction.to && nets.map(n=>n.uniswapRouterV3).includes(transaction.to.toLowerCase() as Lowercase<string>)){
         routerFace = face.pancakeRouterV3;
     }
 
