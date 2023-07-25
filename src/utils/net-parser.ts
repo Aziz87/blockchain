@@ -82,11 +82,12 @@ export default class NetParser extends EventEmitter {
             } else {
                 const provider = new JsonRpcProvider(config.rpc.url);
                 const block = await provider.getBlockWithTransactions(blockNumber)
+                if(!block)throw new Error("Block not parsed...")
                 // console.log(`${blockNumber} / ${this.blockNumber} [${block.transactions.length} txs]`)
-                if(block.transactions) this.emit(NetParser.NEW_TRANSACTIONS, config, block.transactions);
+                if(block) this.emit(NetParser.NEW_TRANSACTIONS, config, block.transactions);
             }
         } catch (err) {
-            console.log(`network ${this.netId}: error parse block`, err)
+            console.log(`network ${this.netId}: error parse block ${blockNumber}`, err)
         }
     }
 }
