@@ -1,4 +1,4 @@
-import { BigNumberish,constants,utils, } from "ethers"
+import { BigNumberish,Contract,utils, } from "ethers"
 import * as TronWeb from "tronweb";
 import { Symbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
@@ -8,8 +8,8 @@ import abiPancakePair from "../abi/pancake-pair"
 import abiPancakeRouterV2 from "../abi/pancake-router-v2"
 import abiPancakeRouterV3 from "../abi/pancake-router-v3"
 import TronDecoder from "../tron/tron-decoder";
-import { Blockchain } from "src/blockchain";
-import nets from "src/nets/net";
+import { Blockchain } from "../blockchain";
+import nets from "../nets/net";
 
 
 const face = {
@@ -17,7 +17,7 @@ const face = {
     pancakeRouterV2 : new Interface(abiPancakeRouterV2),
     pancakeRouterV3 : new Interface(abiPancakeRouterV3)
 }
-
+ 
 export function fromHex(hexAddress: string): string {
     return TronWeb.address.fromHex(hexAddress);
 }
@@ -36,6 +36,7 @@ enum Method {
     swapTokensForExactETH = "swapTokensForExactETH",
     swapExactTokensForETHSupportingFeeOnTransferTokens = "swapExactTokensForETHSupportingFeeOnTransferTokens",
     swapExactETHForTokensSupportingFeeOnTransferTokens = "swapExactETHForTokensSupportingFeeOnTransferTokens",
+    multicall = "multicall",
 }
 
 enum MethodCode {
@@ -51,10 +52,16 @@ enum MethodCode {
     swapExactTokensForETH = "0x18cbafe5",
     swapETHForExactTokens = "0xfb3bdb41",
     swapExactTokensForETHSupportingFeeOnTransferTokens = "0x791ac947",
-    swapExactETHForTokensSupportingFeeOnTransferTokens = "0xb6f9de95"
+    swapExactETHForTokensSupportingFeeOnTransferTokens = "0xb6f9de95",
+    swapTokensForExactTokens_v3 = "0x42712a67",
+    swapExactTokensForTokens_v3 = "0x472b43f3",
+    multicall_v3_1 = "0x5ae401dc",
+    multicall_v3_2 = "0xac9650d8",
+    multicall_v3_3 = "0x1f0464d1",
 }
 
 
+ 
 
 // @ts-ignore
 const methodsNames = Object.assign(...Object.keys(MethodCode).map(key => ({ [MethodCode[key]]: key })))
@@ -100,6 +107,7 @@ export class TX {
     public needDecode:boolean = false;
     public static methods = Method;
     public static methodsCodes = MethodCode;
+    public additionalTxs:TX[]=[];
 
 
     async decode(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
@@ -122,7 +130,7 @@ export class TX {
 }
 
 export function formatEth(transaction: TransactionResponse): TX {
-    const tx = new TX();
+    let tx = new TX();
     tx.hash = transaction.hash;
     tx.from = transaction.from.toLowerCase() as Lowercase<string>;
     tx.amountIn = transaction?.value || 0;
@@ -168,7 +176,9 @@ export function formatEth(transaction: TransactionResponse): TX {
                     MethodCode.swapExactETHForTokens+'',
                     MethodCode.swapTokensForExactTokens+'',
                     MethodCode.swapExactTokensForTokens+'',
-                    MethodCode.swapETHForExactTokens+''
+                    MethodCode.swapETHForExactTokens+'',
+                    MethodCode.swapExactTokensForTokens_v3,
+                    MethodCode.swapTokensForExactTokens_v3,
                 ].includes(methodCode)) {
                     tx.router = transaction.to.toLowerCase() as Lowercase<string>;
                     const res = routerFace.parseTransaction(transaction)
@@ -176,6 +186,27 @@ export function formatEth(transaction: TransactionResponse): TX {
                     tx.amountOut = res.args.amountOutMin || res.args.amountOut;
                     tx.path = res.args.path.map(x=>x.toLowerCase());
                     tx.to = res.args.to.toLowerCase();
+                } else if ([
+                    MethodCode.multicall_v3_1+'',
+                    MethodCode.multicall_v3_2+'',
+                    MethodCode.multicall_v3_3+'',
+                ].includes(methodCode)) {
+                    const res:any = routerFace.parseTransaction(transaction)
+                    transaction.data=res.args.data[0]
+                    tx = formatEth(transaction)
+                    for(let i=1;i<res.args.data.length;i++){
+                        transaction.data=res.args.data[i]
+                        tx.additionalTxs.push(formatEth(transaction));
+                    }
+
+                    // console.log("res data",res.args.data[0])
+
+                    // const decode = routerFace.decodeFunctionData(res.args.data[0].substring(0,10),res.args.data[0]);
+                    // console.log("decode",decode);
+            
+                    
+
+                    
                 } else if (methodCode === MethodCode.stake) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
