@@ -18,6 +18,7 @@ import  {TransactionResponse} from "@ethersproject/abstract-provider"
 import { BlockTransaction } from "./tron/interfaces";
 import { TronTransaction } from "./tron/tron-methods-d";
 import { constants } from "ethers";
+import TronWeb from "tronweb";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -36,7 +37,7 @@ const valid = function(net:NET|number, address:string):boolean{
 }
 
 export {
-    NET, Token , NetworkName, Symbol, TX, NetParser,
+    NET, Token , NetworkName, Symbol, TX, NetParser, ethers, TronWeb,
     crypto, valid, net, lib
 }
 
