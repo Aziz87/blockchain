@@ -22,7 +22,8 @@ const Gnosis: NET = {
     }],
     miningBlockSeconds: 5,
     wrapedNativToken: null,
-    uniswapRouter: null,
+    uniswapRouterV2: null,
+    uniswapRouterV3: null,
     tokens: [
         { symbol: Symbol.USDT, decimals: 6, address: "0x4ecaba5870353805a9f068101a40e0f32ed605c6" }
     ],

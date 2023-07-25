@@ -22,7 +22,8 @@ const Poligon: NET = {
     }],
     miningBlockSeconds: 2.3,
     wrapedNativToken: null,
-    uniswapRouter: null,
+    uniswapRouterV2: null,
+    uniswapRouterV3: null,
     tokens: [
         { address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', decimals: 6, symbol: Symbol.USDT },
         { address: '0x2791bca1f2de4661ed88a30c99a7a9449aa84174', decimals: 6, symbol: Symbol.USDC },

@@ -22,7 +22,8 @@ const BinanceSmartChain: NET = {
         ], symbol: Symbol.BNB, decimals: 18
     }],
     miningBlockSeconds: 3,
-    uniswapRouter: "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    uniswapRouterV2: "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+    uniswapRouterV3: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
     wrapedNativToken: { symbol: Symbol.WBNB, decimals: 18, address: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" },
     tokens: [
         { symbol: Symbol.USDT, address: "0x55d398326f99059ff775485246999027b3197955", decimals: 18 },

@@ -21,7 +21,8 @@ const Ethereum: NET = {
         ], symbol: Symbol.ETH, decimals: 18
     }],
     miningBlockSeconds: 15,
-    uniswapRouter: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    uniswapRouterV2: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    uniswapRouterV3: "0xe592427a0aece92de3edee1f18e0157c05861564",
     wrapedNativToken: { symbol: Symbol.WETH, decimals: 18, address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" },
     tokens: [
         {   symbol: Symbol.USDT, address: "0xdac17f958d2ee523a2206206994597c13d831ec7", decimals: 6 },

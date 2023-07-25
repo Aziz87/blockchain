@@ -23,7 +23,8 @@ const BinanceSmartChainTestnet: NET = {
         }
     ],
     miningBlockSeconds: 3,
-    uniswapRouter: "0x9ac64cc6e4415144c455bd8e4837fea55603e5c3",
+    uniswapRouterV2: "0x9ac64cc6e4415144c455bd8e4837fea55603e5c3",
+    uniswapRouterV3: "0x9a489505a00ce272eaa5e07dba6491314cae3796",
     wrapedNativToken: { symbol: Symbol.WBNB, decimals: 18, address: "0xae13d989dac2f0debff460ac112a837c89baa7cd" },
     tokens: [{ symbol: Symbol.USDT, decimals: 18, address: "0x337610d27c682e347c9cd60bd4b3b107c9d34ddd" }],
     requestsPerSecond:5

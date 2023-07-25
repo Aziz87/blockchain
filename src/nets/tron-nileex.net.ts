@@ -20,7 +20,8 @@ const TronNile: NET = {
     ],
     miningBlockSeconds: 3,
     wrapedNativToken: { address: 'tysbwxnnytgszatfaue9hqpxku3fkco94a', decimals: 6, symbol: Symbol.WTRX },
-    uniswapRouter: "",
+    uniswapRouterV2: null,
+    uniswapRouterV3: null,
     tokens: [
         { address: 'txlaq63xg1nazckpwkhvzw7csemlmeqcdj', decimals: 6, symbol: Symbol.USDT }
     ],

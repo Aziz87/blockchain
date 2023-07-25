@@ -24,7 +24,8 @@ const Optimism: NET = {
     }],
     miningBlockSeconds: 2,
     wrapedNativToken: null,
-    uniswapRouter: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    uniswapRouterV2: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
+    uniswapRouterV3: "0xe592427a0aece92de3edee1f18e0157c05861564",
     tokens: [
         { address: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', decimals: 6, symbol: Symbol.USDT },
         { address: '0x7f5c764cbc14f9669b88837ca1490cca17c31607', decimals: 6, symbol: Symbol.USDC },

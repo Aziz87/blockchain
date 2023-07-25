@@ -23,7 +23,8 @@ const Avalanche: NET = {
     }],
     miningBlockSeconds: 1.9,
     wrapedNativToken: null,
-    uniswapRouter: null,
+    uniswapRouterV2: null,
+    uniswapRouterV3: null,
     tokens: [
         { symbol: Symbol.USDT, decimals: 6, address: "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7" },
         { symbol: Symbol.USDC, decimals: 6, address: "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e" },

@@ -70,7 +70,8 @@ export interface NET {
     multicall: Lowercase<string>;//'0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
     tornadoContracts: TornatoContract[];
     miningBlockSeconds: number;//15
-    uniswapRouter: Lowercase<string>;
+    uniswapRouterV2: Lowercase<string>;
+    uniswapRouterV3: Lowercase<string>;
     wrapedNativToken: Token;
     tokens: Token[];
     requestsPerSecond:number;
