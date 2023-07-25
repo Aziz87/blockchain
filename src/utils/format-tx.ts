@@ -6,13 +6,16 @@ import  {TransactionResponse} from "@ethersproject/abstract-provider"
 const {AbiCoder, Interface} = utils;
 import abiPancakePair from "../abi/pancake-pair"
 import abiPancakeRouterV2 from "../abi/pancake-router-v2"
+import abiPancakeRouterV3 from "../abi/pancake-router-v3"
 import TronDecoder from "../tron/tron-decoder";
 import { Blockchain } from "src/blockchain";
+import nets from "src/nets/net";
 
 
 const face = {
     pancakePair : new Interface(abiPancakePair),
-    pancakeRouterV2 : new Interface(abiPancakeRouterV2)
+    pancakeRouterV2 : new Interface(abiPancakeRouterV2),
+    pancakeRouterV3 : new Interface(abiPancakeRouterV3)
 }
 
 export function fromHex(hexAddress: string): string {
@@ -125,6 +128,11 @@ export function formatEth(transaction: TransactionResponse): TX {
     tx.amountIn = transaction?.value || 0;
 
 
+    let routerFace = face.pancakeRouterV2;
+    if(nets.map(n=>n.uniswapRouterV3).includes(transaction.to.toLowerCase() as Lowercase<string>)){
+        routerFace = face.pancakeRouterV3;
+    }
+
     try {
         if (transaction.data) {
             if (transaction.data === "0x") {
@@ -163,7 +171,7 @@ export function formatEth(transaction: TransactionResponse): TX {
                     MethodCode.swapETHForExactTokens+''
                 ].includes(methodCode)) {
                     tx.router = transaction.to.toLowerCase() as Lowercase<string>;
-                    const res = face.pancakeRouterV2.parseTransaction(transaction)
+                    const res = routerFace.parseTransaction(transaction)
                     tx.amountIn = res.args.amountIn || res.args.amountInMax || transaction.value;
                     tx.amountOut = res.args.amountOutMin || res.args.amountOut;
                     tx.path = res.args.path.map(x=>x.toLowerCase());

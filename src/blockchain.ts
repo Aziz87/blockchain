@@ -158,7 +158,7 @@ export class Blockchain {
         const config = this.getConfig(netId);
         const USDT = config.tokens.find(x => x.symbol === Symbol.USDT)
         const face = new Interface(pancakeRouterV2)
-        const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouter, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, USDT.address]], face }))
+        const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouterV2, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, USDT.address]], face }))
         const result = await this.getLimitter(netId).schedule(()=> multiCall(config, items));
         return result;
     }
@@ -402,7 +402,7 @@ export class Blockchain {
     }
 
 
-    public getUniswapContract(net:NET|number, privateKey?:string){
+    public getUniswapContract(net:NET|number, privateKey?:string, v : "v2" | "v3" ="v2"){
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         if(net.symbol===Symbol.TRX){
@@ -410,8 +410,8 @@ export class Blockchain {
         }else{
             const provider = this.getProvider<providers.JsonRpcProvider>(net);
             return privateKey
-            ? new Contract(net.uniswapRouter, pancakeRouterV2, new Wallet(privateKey, provider))
-            : new Contract(net.uniswapRouter, pancakeRouterV2, provider)
+            ? new Contract(v==="v2"?net.uniswapRouterV2:net.uniswapRouterV3, pancakeRouterV2, new Wallet(privateKey, provider))
+            : new Contract(v==="v2"?net.uniswapRouterV2:net.uniswapRouterV3, pancakeRouterV2, provider)
         }
     }
 
