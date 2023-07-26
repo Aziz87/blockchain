@@ -7,6 +7,7 @@ import { BlockTransaction } from "../tron/interfaces";
 import { TronMethods } from "../tron/tron-methods";
 const {JsonRpcProvider} = providers;
 
+
 const TRON_BLOCKS_PARSE_RANGE = 5;
 
 export default class NetParser extends EventEmitter {
@@ -71,7 +72,7 @@ export default class NetParser extends EventEmitter {
         }
     }
 
-    async parse(blockNumber: number, toBlockNumber?: number) {
+    async parse(blockNumber: number, toBlockNumber?: number){
         try {
             const config = this.getConfig(this.netId);
             if (config.symbol === Symbol.TRX) {
@@ -81,8 +82,8 @@ export default class NetParser extends EventEmitter {
                 this.emit(NetParser.NEW_TRANSACTIONS, config, transactions);
             } else {
                 const provider = new JsonRpcProvider(config.rpc.url);
-                const block = await provider.getBlockWithTransactions(blockNumber)
-                if(!block)throw new Error("Block not parsed...")
+                const block = await provider.getBlockWithTransactions(blockNumber);
+                if(!block) throw new Error("Block not parsed...")
                 // console.log(`${blockNumber} / ${this.blockNumber} [${block.transactions.length} txs]`)
                 if(block) this.emit(NetParser.NEW_TRANSACTIONS, config, block.transactions);
             }

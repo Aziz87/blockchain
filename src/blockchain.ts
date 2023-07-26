@@ -15,10 +15,11 @@ import * as crypto from "./utils/crypto"
 import NetParser from "./utils/net-parser"
 import {formatTron,formatEth, TX} from "./utils/format-tx"
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
-import { BlockTransaction } from "./tron/interfaces";
+import { BlockInfo, BlockTransaction } from "./tron/interfaces";
 import { TronTransaction } from "./tron/tron-methods-d";
 import { constants } from "ethers";
 import TronWeb from "tronweb";
+import {BlockWithTransactions,Log} from "@ethersproject/abstract-provider"
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -141,14 +142,14 @@ export class Blockchain {
             let decimals = 0;
             let symbol = "";
             let name = "";
-            try{decimals=address===constants.AddressZero ? net.decimals : result.decimals[address][0]}catch(err){console.log(err)}
-            try{decimals=symbol===constants.AddressZero ? net.symbol : result.symbol[address][0]}catch(err){console.log(err)}
-            try{name=address===constants.AddressZero ? net.name : result.name[address][0]}catch(err){console.log(err)}
+            try{decimals=(address===constants.AddressZero) ? net.decimals : result.decimals[address][0]}catch(err){}//{console.log(err)}
+            try{symbol=(symbol===constants.AddressZero) ? net.symbol : result.symbol[address][0]}catch(err){}//{console.log(err)}
+            try{name=(address===constants.AddressZero) ? net.name : result.name[address][0]}catch(err){}//{console.log(err)}
             const token = {
                 address,
-                decimals: address===constants.AddressZero ? net.decimals : result.decimals[address][0],
-                symbol: address===constants.AddressZero ? net.symbol : result.symbol[address][0],
-                name: address===constants.AddressZero ? net.name : result.name[address][0]
+                decimals,
+                symbol,
+                name
             };
            
             if(caching) Blockchain.tokensCache[address]=token;
@@ -405,8 +406,20 @@ export class Blockchain {
         }
     }
 
+    public async getBlock(net:NET, blockNumber: number, toBlockNumber?: number):Promise<BlockWithTransactions | BlockInfo[]> {
+        if (net.symbol === Symbol.TRX) return await this.getLimitter(net.id).schedule(() => this.tronMethodos[net.id].getBlockRange(blockNumber, toBlockNumber))
+        else return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getBlockWithTransactions(blockNumber));
+    }
 
-    public getUniswapContract(net:NET|number, privateKey?:string, v : "v2" | "v3" ="v2"){
+
+    public async getLogs(net:NET, fromBlock: number, toBlock?: number, address?:string, topics?:string[]):Promise<Log[] | BlockInfo[]> {
+        if (net.symbol === Symbol.TRX) return await this.getLimitter(net.id).schedule(() => this.tronMethodos[net.id].getBlockRange(fromBlock, toBlock))
+        else return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getLogs({
+            fromBlock, toBlock, address, topics
+        }));
+    }
+
+    public getUniswapContract(net:NET|number, privateKey?:string, v: "v2" | "v3" = "v2"){
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         if(net.symbol===Symbol.TRX){
@@ -511,6 +524,8 @@ export class Blockchain {
     public async getAmountOut(net:NET|number, amountIn:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish):Promise<BigNumberish>{
         return await this.getUniswapContract(net).etAmountOut(amountIn, reserveIn, reserveOut);
     }
+
+
 
 
 }
