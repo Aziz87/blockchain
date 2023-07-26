@@ -410,7 +410,12 @@ export class Blockchain {
         if (net.symbol === Symbol.TRX) return await this.getLimitter(net.id).schedule(() => this.tronMethodos[net.id].getBlockRange(blockNumber, toBlockNumber))
         else return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getBlockWithTransactions(blockNumber));
     }
+    
 
+    public async getBlockNumber(net:NET):Promise<number> {
+        if (net.symbol === Symbol.TRX) return await this.getLimitter(net.id).schedule(() => this.tronMethodos[net.id].getBlockNumber())
+        else return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getBlockNumber());
+    }
 
     public async getLogs(net:NET, fromBlock: number, toBlock?: number, address?:string, topics?:string[]):Promise<Log[] | BlockInfo[]> {
         if (net.symbol === Symbol.TRX) return await this.getLimitter(net.id).schedule(() => this.tronMethodos[net.id].getBlockRange(fromBlock, toBlock))
