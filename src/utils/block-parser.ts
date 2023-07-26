@@ -77,7 +77,7 @@ export default class BlockParser extends EventEmitter {
                     fromBlock, toBlock
                 });
                 if(!logs) throw new Error("Logs not parsed...")
-                else this.emit(events.NEW_TRANSACTIONS, this.net, logs);
+                else this.emit(events.NEW_LOGS, this.net, logs);
             }
         } catch (err) {
             console.log(`network ${this.net.id}: error parse logs on block ${fromBlock}`, err)
