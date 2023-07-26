@@ -24,14 +24,13 @@ const Arbitrum: NET = {
     }],
     miningBlockSeconds: 1,
     wrapedNativToken: {address:"0x82af49447d8a07e3bd95bd0d56f35241523fbab1", symbol:Symbol.WETH, decimals:18},
-    uniswapRouterV2: null,
-    uniswapRouterV3: null,
     tokens: [
         { symbol: Symbol.USDT, decimals: 6, address: "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" },
         { symbol: Symbol.USDC, decimals: 6, address: "0xaf88d065e77c8cc2239327c5edb3a432268e5831" },
         { symbol: Symbol.WBTC, decimals: 8, address: "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f" }
     ],
     requestsPerSecond:5,
+    swapRouters:[],
 }
 
 export default Arbitrum;

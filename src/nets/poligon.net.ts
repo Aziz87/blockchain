@@ -22,8 +22,6 @@ const Poligon: NET = {
     }],
     miningBlockSeconds: 2.3,
     wrapedNativToken: null,
-    uniswapRouterV2: null,
-    uniswapRouterV3: null,
     tokens: [
         { address: '0xc2132d05d31c914a87c6611c10748aeb04b58e8f', decimals: 6, symbol: Symbol.USDT },
         { address: '0x2791bca1f2de4661ed88a30c99a7a9449aa84174', decimals: 6, symbol: Symbol.USDC },
@@ -31,7 +29,8 @@ const Poligon: NET = {
         { address: '0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6', decimals: 8, symbol: Symbol.WBTC },
         { address: '0x7ceb23fd6bc0add59e62ac25578270cff1b9f619', decimals: 18, symbol: Symbol.WETH}
     ],
-    requestsPerSecond:5
+    requestsPerSecond:5,
+    swapRouters:[]
 }
 
 export default Poligon;

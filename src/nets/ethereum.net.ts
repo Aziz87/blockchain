@@ -1,4 +1,4 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
 
 const Ethereum: NET = {
     id: 1,
@@ -21,8 +21,6 @@ const Ethereum: NET = {
         ], symbol: Symbol.ETH, decimals: 18
     }],
     miningBlockSeconds: 15,
-    uniswapRouterV2: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
-    uniswapRouterV3: "0xe592427a0aece92de3edee1f18e0157c05861564",
     wrapedNativToken: { symbol: Symbol.WETH, decimals: 18, address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" },
     tokens: [
         {   symbol: Symbol.USDT, address: "0xdac17f958d2ee523a2206206994597c13d831ec7", decimals: 6 },
@@ -31,6 +29,12 @@ const Ethereum: NET = {
         {   symbol: Symbol.BNB,  address: '0xb8c77482e45f1f44de1745f52c74426c631bdd52', decimals: 18},
         {   symbol: Symbol.WBTC, address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', decimals: 8},
           
+    ],
+
+    swapRouters:[
+        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x881d40237659c251811cec9c364ef91dc08d300c"},
+        {version:SwapRouterVersion.UNISWAP_V2, address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"},
+        {version:SwapRouterVersion.UNISWAP_V3, address: "0xe592427a0aece92de3edee1f18e0157c05861564"},
     ],
     requestsPerSecond:5
 }

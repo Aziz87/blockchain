@@ -1,4 +1,4 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
 
 const Goerli: NET = {
     id: 5,
@@ -43,8 +43,10 @@ const Goerli: NET = {
     ],
     miningBlockSeconds: 12,
     wrapedNativToken: { address: '0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6', decimals: 18, symbol: Symbol.WETH },
-    uniswapRouterV2: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
-    uniswapRouterV3: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d",
+    swapRouters:[
+        {version:SwapRouterVersion.UNISWAP_V2, address:"0x7a250d5630b4cf539739df2c5dacb4c659f2488d"},
+        {version:SwapRouterVersion.UNISWAP_V3, address:"0x7a250d5630b4cf539739df2c5dacb4c659f2488d"}
+    ],
     tokens: [
         { address: '0x07865c6e87b9f70255377e024ace6630c1eaa37f', decimals: 6, symbol: Symbol.USDT }
     ],

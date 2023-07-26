@@ -1,4 +1,4 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
 
 const Optimism: NET = {
     id: 10,
@@ -24,8 +24,6 @@ const Optimism: NET = {
     }],
     miningBlockSeconds: 2,
     wrapedNativToken: null,
-    uniswapRouterV2: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45",
-    uniswapRouterV3: "0xe592427a0aece92de3edee1f18e0157c05861564",
     tokens: [
         { address: '0x94b008aa00579c1307b0ef2c499ad98a8ce58e58', decimals: 6, symbol: Symbol.USDT },
         { address: '0x7f5c764cbc14f9669b88837ca1490cca17c31607', decimals: 6, symbol: Symbol.USDC },
@@ -33,7 +31,11 @@ const Optimism: NET = {
         { address: '0x68f180fcce6836688e9084f035309e29bf0a2095', decimals: 6, symbol: Symbol.WBTC },
         { address: '0x4200000000000000000000000000000000000006', decimals: 6, symbol: Symbol.WETH },
     ],
-    requestsPerSecond:5
+    requestsPerSecond:5,
+    swapRouters:[
+        {version:SwapRouterVersion.UNISWAP_V2,  address: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45"},
+        {version:SwapRouterVersion.UNISWAP_V3,  address: "0xe592427a0aece92de3edee1f18e0157c05861564"},
+    ]
 }
 
 export default Optimism;

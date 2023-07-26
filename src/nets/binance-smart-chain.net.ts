@@ -1,4 +1,4 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
 
 
 const BinanceSmartChain: NET = {
@@ -22,8 +22,6 @@ const BinanceSmartChain: NET = {
         ], symbol: Symbol.BNB, decimals: 18
     }],
     miningBlockSeconds: 3,
-    uniswapRouterV2: "0x10ed43c718714eb63d5aa57b78b54704e256024e",
-    uniswapRouterV3: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4",
     wrapedNativToken: { symbol: Symbol.WBNB, decimals: 18, address: "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c" },
     tokens: [
         { symbol: Symbol.USDT, address: "0x55d398326f99059ff775485246999027b3197955", decimals: 18 },
@@ -36,6 +34,11 @@ const BinanceSmartChain: NET = {
         { symbol: Symbol.WBNB, address: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', decimals: 18 },
         { symbol: Symbol.WTRX, address: '0x85eac5ac2f758618dfa09bdbe0cf174e7d574d5b', decimals: 18 }, 
         { symbol: Symbol.WBTC, address: '0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c', decimals: 18 },
+    ],
+    swapRouters:[
+        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31"},
+        {version:SwapRouterVersion.UNISWAP_V2, address: "0x10ed43c718714eb63d5aa57b78b54704e256024e"},
+        {version:SwapRouterVersion.UNISWAP_V3, address: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4"},
     ],
     requestsPerSecond: 5
 }

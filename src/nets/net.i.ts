@@ -60,6 +60,20 @@ export interface Token {
     name?:string;
 }
 
+export enum SwapRouterVersion {
+    UNISWAP_V2 ="UNISWAP_V2",
+    UNISWAP_V3 ="UNISWAP_V3",
+    SUNSWAP_V2 ="SUNSWAP_V2",
+    SUNSWAP_V3 ="SUNSWAP_V3",
+    METAMASK_SWAP ="METAMASK_SWAP",
+    UNKNOWN_ROUTER = "UNKNOWN_ROUTER"
+}
+
+export interface SwapRouter {
+    version:SwapRouterVersion;
+    address:Lowercase<string>
+}
+
 export interface NET {
     id: number;//1
     name: NetworkName// 'Ethereum Mainnet',
@@ -70,8 +84,9 @@ export interface NET {
     multicall: Lowercase<string>;//'0xeefba1e63905ef1d7acba5a8513c70307c1ce441',
     tornadoContracts: TornatoContract[];
     miningBlockSeconds: number;//15
-    uniswapRouterV2: Lowercase<string>;
-    uniswapRouterV3: Lowercase<string>;
+    // uniswapRouterV2: Lowercase<string>;
+    // uniswapRouterV3: Lowercase<string>;
+    swapRouters:SwapRouter[];
     wrapedNativToken: Token;
     tokens: Token[];
     requestsPerSecond:number;

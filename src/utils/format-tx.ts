@@ -1,21 +1,31 @@
-import { BigNumberish,Contract,utils, } from "ethers"
+import { BigNumber, BigNumberish,Contract,constants,utils, } from "ethers"
 import * as TronWeb from "tronweb";
-import { Symbol, NET } from "../nets/net.i";
+import { Symbol, NET, SwapRouterVersion } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
-import  {TransactionResponse} from "@ethersproject/abstract-provider"
+import  {TransactionResponse, Log} from "@ethersproject/abstract-provider"
 const {AbiCoder, Interface} = utils;
+import erc20 from "../abi/erc20";
 import abiPancakePair from "../abi/pancake-pair"
+import wrappedETH from "../abi/weth"
 import abiPancakeRouterV2 from "../abi/pancake-router-v2"
 import abiPancakeRouterV3 from "../abi/pancake-router-v3"
+import abiMetamaskSwapRouter from "../abi/metamask-swap-router"
 import TronDecoder from "../tron/tron-decoder";
 import { Blockchain } from "../blockchain";
 import nets from "../nets/net";
 
 
+const TransferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+const ApprovalTopic = "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+const WithdrawWETHTopic = "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65"
+
 const face = {
     pancakePair : new Interface(abiPancakePair),
     pancakeRouterV2 : new Interface(abiPancakeRouterV2),
-    pancakeRouterV3 : new Interface(abiPancakeRouterV3)
+    pancakeRouterV3 : new Interface(abiPancakeRouterV3),
+    erc20: new Interface(erc20),
+    weth: new Interface(wrappedETH),
+    metamaskSwapRouter: new Interface(abiMetamaskSwapRouter)
 }
  
 export function fromHex(hexAddress: string): string {
@@ -24,9 +34,11 @@ export function fromHex(hexAddress: string): string {
 
 enum Method {
     transfer = "transfer",
+    withdrawWETH = "withdraw",
     transferFrom = "transferFrom",
     addLiquidityETH = "addLiquidityETH",
     stake = "stake",
+    swap = "swap",
     approve = "approve",
     swapExactTokensForTokens = "swapExactTokensForTokens",
     swapTokensForExactTokens = "swapTokensForExactTokens",
@@ -40,6 +52,7 @@ enum Method {
 }
 
 enum MethodCode {
+    swap = "0x5f575529",
     transfer = "0xa9059cbb",
     transferFrom = "0x23b872dd",
     addLiquidityETH = "0xf305d719",
@@ -110,7 +123,8 @@ export class TX {
     public additionalTxs:TX[]=[];
 
 
-    async decode(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
+    public decode = async function(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
+        if(!this.needDecode) return this;
         const decoder = new TronDecoder(net, bc)
         const decoded = await decoder.decodeInput(transaction);
 
@@ -129,6 +143,9 @@ export class TX {
     }
 }
 
+const uniswapV3RoutersAddresses = nets.map(x=>x.swapRouters.filter(x=>x.version===SwapRouterVersion.UNISWAP_V3)).reduce((a,b)=>[...a,...b],[]).map(x=>x.address);
+const metamaskRoutersAddresses = nets.map(x=>x.swapRouters.filter(x=>x.version===SwapRouterVersion.METAMASK_SWAP)).reduce((a,b)=>[...a,...b],[]).map(x=>x.address);
+
 export function formatEth(transaction: TransactionResponse): TX {
     let tx = new TX();
     tx.hash = transaction.hash;
@@ -137,8 +154,11 @@ export function formatEth(transaction: TransactionResponse): TX {
 
 
     let routerFace = face.pancakeRouterV2;
-    if(transaction.to && nets.map(n=>n.uniswapRouterV3).includes(transaction.to.toLowerCase() as Lowercase<string>)){
+    if(transaction.to && uniswapV3RoutersAddresses.includes(transaction.to.toLowerCase() as Lowercase<string>)){
         routerFace = face.pancakeRouterV3;
+    }
+    if(transaction.to && metamaskRoutersAddresses.includes(transaction.to.toLowerCase() as Lowercase<string>)){
+        routerFace = face.metamaskSwapRouter;
     }
 
     try {
@@ -212,6 +232,15 @@ export function formatEth(transaction: TransactionResponse): TX {
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
                     tx.path = ["0x" + token.substr(2).toLowerCase() as Lowercase<string>]
                     tx.amountIn = amountETHMin;
+                } else if (methodCode === MethodCode.swap) {
+                    const res:any = routerFace.parseTransaction(transaction)
+                    tx.amountIn = res.args.amount;
+                    tx.amountOut = BigNumber.from("0x"+res.args.data.substring(216,258));
+                    const tokenOut = "0x"+res.args.data.substring(90,130).toLowerCase();
+                    tx.path=[res.args.tokenFrom.toLowerCase(),tokenOut]
+                    tx.router = transaction.to.toLowerCase() as Lowercase<string>;
+                    tx.to = tx.from;
+                    tx.method = res.args.tokenFrom===constants.AddressZero ? Method.swapExactETHForTokens :tokenOut===constants.AddressZero ? Method.swapExactTokensForETH : Method.swapExactTokensForTokens;
                 }
             }
         }
@@ -231,6 +260,38 @@ export function parseDataAddresses(net:NET, transaction:BlockTransaction | Trans
         return (transaction as TransactionResponse).data.substring(10).match(/.{1,64}/g).filter(x=>x.substring(20,30)!=="0000000000").map(x=>"0x"+x.substring(24,64)) as Lowercase<string>[]
 
     }
+}
+
+
+export function formatLog(log:Log):TX{
+    const tx = new TX();
+    tx.hash = log.transactionHash;
+    tx.path = [log.address.toLowerCase() as Lowercase<string>];
+    if(log.topics[0]===TransferTopic){
+        const d = face.erc20.decodeEventLog("Transfer", log.data, log.topics)
+        tx.from = d.from;
+        tx.to=d.to;
+        tx.method=Method.transfer;
+        tx.amountIn=tx.amountOut=d.value;
+    }else 
+    if(log.topics[0]===ApprovalTopic){
+        const d = face.erc20.decodeEventLog("Approval", log.data, log.topics)
+        tx.from = d.owner;
+        tx.to=d.spender;
+        tx.amountIn=tx.amountOut=d.value;
+        tx.method=Method.approve;
+    }else 
+    if(log.topics[0]===WithdrawWETHTopic){
+        const d = face.weth.decodeEventLog("Withdrawal", log.data, log.topics)
+        tx.from = d.src;
+        tx.to = d.src;
+        tx.amountIn=tx.amountOut=d.wad;
+        tx.method=Method.withdrawWETH;
+    }else tx.error=`Cannot decode log topic ${log.topics[0]}`
+
+
+    return tx;
+
 }
 
 

@@ -1,4 +1,4 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
 const dotenv = require("dotenv").config()
 if (!process.env.TRONGRID_APIKEY) console.error("PLEASE SET TRONGRID_APIKEY to .env file for use tron methods!");
 
@@ -19,8 +19,6 @@ const Tron: NET = {
     ],
     miningBlockSeconds: 3,
     wrapedNativToken: { address: 'tnuc9qb1rrps5cbwlmnmxxbjyfoydxjwfr', decimals: 6, symbol: Symbol.WTRX},
-    uniswapRouterV2: "tkzxdsv2fzkqreqkkvgp5dcwexbekmg2ax",
-    uniswapRouterV3: "tfvisxfaijzfeyesjcevkhfex7hgdtxzf9",
     tokens: [
         { address: 'tr7nhqjekqxgtci8q8zy4pl8otszgjlj6t', symbol: Symbol.USDT, decimals: 6 },
         { address: 'tekxitehnzsmse2xqrbj4w32run966rdz8', symbol: Symbol.USDC, decimals: 6 },
@@ -28,7 +26,12 @@ const Tron: NET = {
         { address: 'tpymhehy5n8tcefygqw2rpxsghsfzghpdn', symbol: Symbol.USDD, decimals: 6 },
         { address: 'tn3w4h6rk2ce4vx9ynfqhwkennhjoxb3m9', symbol: Symbol.WBTC, decimals: 8 }
     ],
-    requestsPerSecond:14
+    requestsPerSecond:14,
+    swapRouters:[
+        {version:SwapRouterVersion.SUNSWAP_V2, address:"tkzxdsv2fzkqreqkkvgp5dcwexbekmg2ax"},
+        {version:SwapRouterVersion.SUNSWAP_V3, address:"tfvisxfaijzfeyesjcevkhfex7hgdtxzf9"},
+    ]
+
 }
 
 export default Tron;

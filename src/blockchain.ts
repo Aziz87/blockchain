@@ -8,18 +8,18 @@ import { multiCall } from './multicall/multicall';
 import MULTICALL from './multicall/multicall-abi';
 import { MultiCallItem } from './multicall/multicall.i';
 import nets, { net } from './nets/net';
-import { Symbol, NET, Token, NetworkName } from './nets/net.i';
+import { Symbol, NET, Token, NetworkName, SwapRouterVersion } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
 import NetParser from "./utils/block-parser"
-import {formatTron,formatEth, TX} from "./utils/format-tx"
+import {formatTron,formatEth, TX, formatLog} from "./utils/format-tx"
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
 import { BlockInfo, BlockTransaction } from "./tron/interfaces";
 import { TronTransaction } from "./tron/tron-methods-d";
 import { constants } from "ethers";
 import TronWeb from "tronweb";
-import {BlockWithTransactions,Log} from "@ethersproject/abstract-provider"
+import {BlockWithTransactions,Log,Block} from "@ethersproject/abstract-provider"
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -169,7 +169,9 @@ export class Blockchain {
         const config = this.getConfig(netId);
         const USDT = config.tokens.find(x => x.symbol === Symbol.USDT)
         const face = new Interface(pancakeRouterV2)
-        const items: MultiCallItem[] = tokens.map((address, i) => ({ target: config.uniswapRouterV2, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, USDT.address]], face }))
+        const target = config.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2)?.address;
+        if(!target) throw new Error(`Router UNISWAP_V2 not found for network ${config.name}`);
+        const items: MultiCallItem[] = tokens.map((address, i) => ({ target, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, USDT.address]], face }))
         const result = await this.getLimitter(netId).schedule(()=> multiCall(config, items));
         return result;
     }
@@ -315,7 +317,8 @@ export class Blockchain {
         }
     }
 
-    public formatTX(net:NET, transaction:BlockTransaction|TransactionResponse):TX{
+    public formatTX(net:NET, transaction:BlockTransaction|TransactionResponse|Log):TX{
+        if((transaction as Log)?.topics) return formatLog(transaction as Log); 
         return net.symbol === Symbol.TRX 
         ? formatTron(net, this, transaction as BlockTransaction)
         : formatEth(transaction as TransactionResponse);
@@ -423,67 +426,69 @@ export class Blockchain {
         else return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getBlockNumber());
     }
 
-    public async getLogs(net:NET, fromBlock: number, toBlock?: number, address?:string, topics?:string[]):Promise<Log[] | BlockInfo[]> {
-        if (net.symbol === Symbol.TRX) return await this.getLimitter(net.id).schedule(() => this.tronMethodos[net.id].getBlockRange(fromBlock, toBlock))
-        else return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getLogs({
+    public async getLogs(net:NET, fromBlock: number, toBlock?: number, address?:string, topics?:string[]):Promise<Log[]> {
+        return await this.getLimitter(net.id).schedule(()=>this.getProvider<ethers.providers.JsonRpcProvider>(net).getLogs({
             fromBlock, toBlock, address, topics
         }));
     }
 
-    public getUniswapContract(net:NET|number, privateKey?:string, v: "v2" | "v3" = "v2"){
+    public getSwapRouterContract(net:NET|number, privateKey?:string, version:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2){
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         if(net.symbol===Symbol.TRX){
             throw new Error("Network not Supported")
         }else{
             const provider = this.getProvider<providers.JsonRpcProvider>(net);
+            const router = net.swapRouters.find(x=>x.version===version);
+            if(!router) throw new Error(`Router ${version} not found for network ${net.name}`);
+
             return privateKey
-            ? new Contract(v==="v2"?net.uniswapRouterV2:net.uniswapRouterV3, pancakeRouterV2, new Wallet(privateKey, provider))
-            : new Contract(v==="v2"?net.uniswapRouterV2:net.uniswapRouterV3, pancakeRouterV2, provider)
+            ? new Contract(router.address, pancakeRouterV2, new Wallet(privateKey, provider))
+            : new Contract(router.address, pancakeRouterV2, provider)
         }
     }
 
 
-    public async swapETHForExactTokens(net:NET|number, privateKey:string, value:BigNumber, amountOut:BigNumber, path:string[],to:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-            const contract = this.getUniswapContract(net, privateKey);
+    public async swapETHForExactTokens(net:NET|number, privateKey:string, value:BigNumber, amountOut:BigNumber, path:string[],to:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey, router);
             if(!deadline)deadline=new Date().getTime();
             return await contract.swapETHForExactTokens(amountOut, path, to, deadline, {value});
     }
 
 
-    public async swapExactETHForTokens(net:NET|number, privateKey:string, value:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-            const contract = this.getUniswapContract(net, privateKey);
+    public async swapExactETHForTokens(net:NET|number, privateKey:string, value:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey,router);
             if(!deadline)deadline=new Date().getTime();
             return await contract.swapExactETHForTokens(amountOutMin, path, to, deadline, {value});
     }
 
 
 
-    public async swapExactTokensForTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-            const contract = this.getUniswapContract(net, privateKey);
+    public async swapExactTokensForTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
             return await contract.swapETHForswapExactTokensForTokensExactTokens(amountIn, amountOutMin, path, to, deadline);
     }
 
 
 
-    public async swapTokensForExactTokens(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-            const contract = this.getUniswapContract(net, privateKey);
+    public async swapTokensForExactTokens(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
             return await contract.swapTokensForExactTokens(amountOut, amountInMax, path, to, deadline);
     }
 
 
-    public async swapTokensForExactETH(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-            const contract = this.getUniswapContract(net, privateKey);
+    public async swapTokensForExactETH(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
             return await contract.swapTokensForExactETH(amountOut, amountInMax, path, to, deadline);
     }
 
 
 
-    public async swapExactTokensForETH(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number):Promise<TransactionResponse | TronTransaction>{
-            const contract = this.getUniswapContract(net, privateKey);
+    public async swapExactTokensForETH(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
             return await contract.swapExactTokensForETH(amountIn, amountOutMin, path, to, deadline);
     }
@@ -520,20 +525,20 @@ export class Blockchain {
         }
     }
 
-    public async getAmountsIn(net:NET|number, amountOut:BigNumberish, path:string[]):Promise<BigNumberish[]>{
-        return await this.getUniswapContract(net).getAmountsIn(amountOut, path);
+    public async getAmountsIn(net:NET|number, amountOut:BigNumberish, path:string[], router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
+        return await this.getSwapRouterContract(net,undefined,router).getAmountsIn(amountOut, path);
     }
 
-    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, path:string[]):Promise<BigNumberish[]>{
-        return await this.getUniswapContract(net).getAmountsOut(amountIn, path);
+    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, path:string[], router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
+        return await this.getSwapRouterContract(net,undefined,router).getAmountsOut(amountIn, path);
     }
 
-    public async getAmountIn(net:NET|number, amountOut:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish):Promise<BigNumberish>{
-        return await this.getUniswapContract(net).getAmountIn(amountOut, reserveIn, reserveOut);
+    public async getAmountIn(net:NET|number, amountOut:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish>{
+        return await this.getSwapRouterContract(net,undefined,router).getAmountIn(amountOut, reserveIn, reserveOut);
     }
 
-    public async getAmountOut(net:NET|number, amountIn:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish):Promise<BigNumberish>{
-        return await this.getUniswapContract(net).etAmountOut(amountIn, reserveIn, reserveOut);
+    public async getAmountOut(net:NET|number, amountIn:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish>{
+        return await this.getSwapRouterContract(net,undefined,router).etAmountOut(amountIn, reserveIn, reserveOut);
     }
 
 
