@@ -12,7 +12,7 @@ import { Symbol, NET, Token, NetworkName } from './nets/net.i';
 import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
-import NetParser from "./utils/net-parser"
+import NetParser from "./utils/block-parser"
 import {formatTron,formatEth, TX} from "./utils/format-tx"
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
 import { BlockInfo, BlockTransaction } from "./tron/interfaces";
@@ -58,7 +58,13 @@ export interface SendDto {
     amount: number
 }
 
+export const events = {
+     NEW_TRANSACTIONS: "NEW_TRANSACTIONS",
+     NEW_LOGS: "NEW_LOGS",
+}
+
 export class Blockchain {
+
 
     public static tokensCache:Token[] = [];
 
@@ -92,11 +98,11 @@ export class Blockchain {
      * @param skipBlocks - scan block only when {skipBlocks} left after mining 
      */
     private static watchCache:NetParser[]=[];
-    public watch(netId:number, skipBlocks:number=0):NetParser{
+    public watch(netId:number, logs:boolean):NetParser{
         const net = this.getNet(netId);
         if(!net) throw new Error("Network not found");
         if(Blockchain.watchCache[netId]) return Blockchain.watchCache[netId];
-        const parser = new NetParser(this.getLimitter(netId), netId, net.miningBlockSeconds, skipBlocks);
+        const parser = new NetParser(this, net, logs);
         Blockchain.watchCache[netId] = parser;
         return parser;
     }
@@ -315,7 +321,7 @@ export class Blockchain {
         : formatEth(transaction as TransactionResponse);
     }
 
-    private getTronMethods(net:NET|number):TronMethods{
+    public getTronMethods(net:NET|number):TronMethods{
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         if(!this.tronMethodos[net.id])this.tronMethodos[net.id]=new TronMethods(net);

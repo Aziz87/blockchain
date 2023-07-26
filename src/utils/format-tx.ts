@@ -240,6 +240,7 @@ export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction)
     const tronTx = new TX();
     tronTx.hash = transaction.txID;
 
+
     try {
         if (transaction.raw_data?.contract) {
             const contract = transaction.raw_data.contract[0];
