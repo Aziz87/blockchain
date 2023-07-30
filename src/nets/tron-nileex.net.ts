@@ -14,14 +14,14 @@ const TronNile: NET = {
         block: 'https://nile.tronscan.org/#/block/'
     },
     rpc: { name: 'nileex', url: 'https://nile.trongrid.io/', apiKey: process.env.TRONGRID_APIKEY },
-    multicall: "trpkcrlshrsxfao8zaua8fbrmm8pz43mrs",
+    multicall: "0xbeb95b10bab7915d258062be04b36c0f410f67d0",
     tornadoContracts: [
 
     ],
     miningBlockSeconds: 3,
-    wrapedNativToken: { address: 'tysbwxnnytgszatfaue9hqpxku3fkco94a', decimals: 6, symbol: Symbol.WTRX },
+    wrapedNativToken: { address: '0xfb3b3134f13ccd2c81f4012e53024e8135d58fee', decimals: 6, symbol: Symbol.WTRX },
     tokens: [
-        { address: 'txlaq63xg1nazckpwkhvzw7csemlmeqcdj', decimals: 6, symbol: Symbol.USDT }
+        { address: '0xea51342dabbb928ae1e576bd39eff8aaf070a8c6', decimals: 6, symbol: Symbol.USDT }
     ],
     swapRouters:[],
     requestsPerSecond:5

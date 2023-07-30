@@ -1,10 +1,15 @@
 import axios from "axios";
 import * as TronWeb from "tronweb";
-import {BigNumber, utils} from "ethers"
+import {BigNumber, Contract, utils} from "ethers"
 import { NET } from "../nets/net.i";
 import { BlockInfo } from "./interfaces";
 import { TronTransactionInfo, TronHistoryElement, TronTransaction } from "./tron-methods-d"
 import erc20 from "../abi/erc20";
+import TronNile from "../nets/tron-nileex.net";
+import { MultiCallItem } from "../multicall/multicall.i";
+import MulticallAbi from "../multicall/multicall-abi";
+import { Token } from "../blockchain";
+
 
 export function toHex(str) {
     return TronWeb.address.toHex(str);
@@ -14,31 +19,6 @@ export function fromHex(str) {
 }
 
 export class TronMethods {
-    private multicallAbi: any = [
-        {
-            outputs: [{ type: "uint256" }],
-            constant: true,
-            inputs: [
-                { name: "user", type: "address" },
-                { name: "token", type: "address" },
-            ],
-            name: "tokenBalance",
-            stateMutability: "View",
-            type: "Function",
-        },
-        {
-            outputs: [{ type: "uint256[]" }],
-            constant: true,
-            inputs: [
-                { name: "users", type: "address[]" },
-                { name: "tokens", type: "address[]" },
-            ],
-            name: "balances",
-            stateMutability: "View",
-            type: "Function",
-        },
-        { payable: true, stateMutability: "Payable", type: "Fallback" },
-    ];
     private tronWeb:TronWeb;
     private net: NET;
     constructor(net: NET) {
@@ -215,13 +195,62 @@ export class TronMethods {
         tokens: string[],
 
     ): Promise<number[]> {
+        let checker = "TYPACdASdAe4ZjcACwHscmqy6KCssP2jDt"
+        if(this.net.id===TronNile.id) checker = "TRPKCrLsHrSXfAo8zAUa8fBRMm8pz43MRs"
         const contract = await this.tronWeb.contract(
-            this.multicallAbi,
-            fromHex(this.net.multicall)
+            [
+                {
+                    outputs: [{ type: "uint256" }],
+                    constant: true,
+                    inputs: [
+                        { name: "user", type: "address" },
+                        { name: "token", type: "address" },
+                    ],
+                    name: "tokenBalance",
+                    stateMutability: "View",
+                    type: "Function",
+                },
+                {
+                    outputs: [{ type: "uint256[]" }],
+                    constant: true,
+                    inputs: [
+                        { name: "users", type: "address[]" },
+                        { name: "tokens", type: "address[]" },
+                    ],
+                    name: "balances",
+                    stateMutability: "View",
+                    type: "Function",
+                },
+                { payable: true, stateMutability: "Payable", type: "Fallback" },
+            ],
+            checker
         );
-        this.tronWeb.setAddress(fromHex(this.net.multicall));
+        this.tronWeb.setAddress(checker);
         const result: number[] = await contract.methods.balances(accounts, tokens).call()
         return result;
+    }
+
+
+
+    public async getTokensInfo(
+         tokens: string[]
+    ): Promise<Token[]> {
+        const contractAddress = "TQKaNLbzBn4W769A3YJjYT3RMfHKVFLG8s";
+        const abi = [{"outputs":[{"type":"uint256[]"}],"inputs":[{"name":"tokens","type":"address[]"},{"name":"contracts","type":"address[]"},{"name":"account","type":"address"}],"name":"getTokenAllowance","stateMutability":"view","type":"function"},{"outputs":[{"type":"uint8[]"}],"inputs":[{"name":"tokens","type":"address[]"}],"name":"getTokenDecimals","stateMutability":"view","type":"function"},{"outputs":[{"type":"string[]"}],"inputs":[{"name":"tokens","type":"address[]"}],"name":"getTokenSymbols","stateMutability":"view","type":"function"},{"outputs":[{"type":"bool"}],"inputs":[{"name":"token","type":"address"}],"name":"isContract","stateMutability":"view","type":"function"},{"stateMutability":"Payable","type":"Receive"}];
+        const contract = await this.tronWeb.contract(
+            abi,
+            contractAddress
+        );
+        this.tronWeb.setAddress(contractAddress);
+
+        const decimals = await contract.methods.getTokenDecimals(tokens).call();
+        const symbols = await contract.methods.getTokenSymbols(tokens).call();
+        return tokens.map((address,i)=>({
+            address,
+            decimals:decimals[i],
+            symbol:symbols[i],
+            name:symbols[i]
+        }));
     }
 
 

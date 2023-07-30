@@ -13,7 +13,7 @@ const Tron: NET = {
         block: 'https://tronscan.org/#/block/'
     },
     rpc: { name: 'trongrid', url: 'https://api.trongrid.io', apiKey: process.env.TRONGRID_APIKEY },
-    multicall: "0xf5da6999e5b9c4b189d1cc6d605ea2d77df48c13",
+    multicall: "0x0dad23a37b53556ed32c1b9c30f875339c9d443d",
     tornadoContracts: [
 
     ],

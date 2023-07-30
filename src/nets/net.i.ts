@@ -56,7 +56,7 @@ export interface IRPC {
 export interface Token {
     symbol: Symbol;
     decimals: number;
-    address: Lowercase<string>
+    address: string
     name?:string;
 }
 

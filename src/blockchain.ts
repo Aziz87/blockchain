@@ -126,7 +126,7 @@ export class Blockchain {
      * @param tokens 
      * @returns 
      */
-    public async getTokensInfo(net:NET|number, tokens: Lowercase<string>[], caching:boolean): Promise<Token[]> {
+    public async getTokensInfo(net:NET|number, tokens: string[], caching:boolean): Promise<Token[]> {
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
 
@@ -134,14 +134,23 @@ export class Blockchain {
         for(let t of tokens) {
             if(Blockchain.tokensCache[t]) detectedInCacke.push(Blockchain.tokensCache[t]);
         }
+
         if(detectedInCacke.length===tokens.length) return detectedInCacke;
+
+
+        if(net.symbol===Symbol.TRX){
+            const results = await this.getLimitter(net.id).schedule(()=> this.getTronMethods(net).getTokensInfo(tokens));    
+            if(caching) for(let token of results) Blockchain.tokensCache[token.address]=token;
+            return results;
+        }
 
         const face = new Interface(erc20);
         const decimals: MultiCallItem[] = tokens.map(target => ({ target, method: "decimals", arguments: [], face }))
         const symbol: MultiCallItem[] = tokens.map(target => ({ target, method: "symbol", arguments: [], face }))
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
+
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, [...decimals,...symbol, ...name]));
-        // console.log({result})
+        console.log({result})
         const tkns = [];
         for(let t = 0; t<tokens.length;t++){
             const address = tokens[t];
