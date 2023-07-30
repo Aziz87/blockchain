@@ -246,7 +246,7 @@ export class TronMethods {
         const decimals = await contract.methods.getTokenDecimals(tokens).call();
         const symbols = await contract.methods.getTokenSymbols(tokens).call();
         return tokens.map((address,i)=>({
-            address,
+            address:fromHex(address),
             decimals:decimals[i],
             symbol:symbols[i],
             name:symbols[i]

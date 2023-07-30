@@ -137,7 +137,6 @@ export class Blockchain {
 
         if(detectedInCacke.length===tokens.length) return detectedInCacke;
 
-
         if(net.symbol===Symbol.TRX){
             const results = await this.getLimitter(net.id).schedule(()=> this.getTronMethods(net).getTokensInfo(tokens));    
             if(caching) for(let token of results) Blockchain.tokensCache[token.address]=token;
@@ -150,7 +149,6 @@ export class Blockchain {
         const name: MultiCallItem[] = tokens.map(target => ({ target, method: "name", arguments: [], face }))
 
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, [...decimals,...symbol, ...name]));
-        console.log({result})
         const tkns = [];
         for(let t = 0; t<tokens.length;t++){
             const address = tokens[t];
