@@ -339,7 +339,7 @@ export class Blockchain {
                     tokens.unshift({ symbol: Symbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
                 }
                 
-                const tronMethods = this.tronMethodos[netId];
+                const tronMethods = this.getTronMethods(netId)
                 const arr:number[] = await this.getLimitter(netId).schedule(()=>tronMethods.getBalances(addresses, tokens.map(x => x.address)));
                 const res: number[][] = tokens.map(x=>[]);
                 

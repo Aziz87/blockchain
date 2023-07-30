@@ -13,23 +13,23 @@ const Tron: NET = {
         block: 'https://tronscan.org/#/block/'
     },
     rpc: { name: 'trongrid', url: 'https://api.trongrid.io', apiKey: process.env.TRONGRID_APIKEY },
-    multicall: "typacdasdae4zjcacwhscmqy6kcssp2jdt",
+    multicall: "0xf5da6999e5b9c4b189d1cc6d605ea2d77df48c13",
     tornadoContracts: [
 
     ],
     miningBlockSeconds: 3,
-    wrapedNativToken: { address: 'tnuc9qb1rrps5cbwlmnmxxbjyfoydxjwfr', decimals: 6, symbol: Symbol.WTRX},
+    wrapedNativToken: { address: '0x891cdb91d149f23b1a45d9c5ca78a88d0cb44c18', decimals: 6, symbol: Symbol.WTRX},
     tokens: [
-        { address: 'tr7nhqjekqxgtci8q8zy4pl8otszgjlj6t', symbol: Symbol.USDT, decimals: 6 },
-        { address: 'tekxitehnzsmse2xqrbj4w32run966rdz8', symbol: Symbol.USDC, decimals: 6 },
-        { address: 'tmz2swatiatzvvch2ebpsbvtywupt9edjh', symbol: Symbol.BUSD, decimals: 18 },
-        { address: 'tpymhehy5n8tcefygqw2rpxsghsfzghpdn', symbol: Symbol.USDD, decimals: 6 },
-        { address: 'tn3w4h6rk2ce4vx9ynfqhwkennhjoxb3m9', symbol: Symbol.WBTC, decimals: 8 }
+        { address: '0xa614f803b6fd780986a42c78ec9c7f77e6ded13c', symbol: Symbol.USDT, decimals: 6 },
+        { address: '0x3487b63d30b5b2c87fb7ffa8bcfade38eaac1abe', symbol: Symbol.USDC, decimals: 6 },
+        { address: '0x83c91bfde3e6d130e286a3722f171ae49fb25047', symbol: Symbol.BUSD, decimals: 18 },
+        { address: '0x94f24e992ca04b49c6f2a2753076ef8938ed4daa', symbol: Symbol.USDD, decimals: 6 },
+        { address: '0x84716914c0fdf7110a44030d04d0c4923504d9cc', symbol: Symbol.WBTC, decimals: 8 }
     ],
     requestsPerSecond:14,
     swapRouters:[
-        {version:SwapRouterVersion.SUNSWAP_V2, address:"tkzxdsv2fzkqreqkkvgp5dcwexbekmg2ax"},
-        {version:SwapRouterVersion.SUNSWAP_V3, address:"tfvisxfaijzfeyesjcevkhfex7hgdtxzf9"},
+        {version:SwapRouterVersion.SUNSWAP_V2, address:"0x6e0617948fe030a7e4970f8389d4ad295f249b7e"},
+        {version:SwapRouterVersion.SUNSWAP_V3, address:"0x3c9e0ac33f138216c50638d71c344a299d0d1030"},
     ]
 
 }

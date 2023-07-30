@@ -217,9 +217,9 @@ export class TronMethods {
     ): Promise<number[]> {
         const contract = await this.tronWeb.contract(
             this.multicallAbi,
-            this.net.multicall
+            fromHex(this.net.multicall)
         );
-        this.tronWeb.setAddress(this.net.multicall);
+        this.tronWeb.setAddress(fromHex(this.net.multicall));
         const result: number[] = await contract.methods.balances(accounts, tokens).call()
         return result;
     }
