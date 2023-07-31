@@ -153,7 +153,7 @@ export function formatEth(transaction: TransactionResponse): TX {
     tx.hash = transaction.hash;
     tx.from = transaction.from.toLowerCase() as Lowercase<string>;
     tx.amountIn = transaction?.value || 0;
-    tx.to=transaction.to.toLowerCase() as Lowercase<string>;
+    if(transaction.to) tx.to=transaction.to.toLowerCase() as Lowercase<string>;
 
 
     let routerFace = face.pancakeRouterV2;
