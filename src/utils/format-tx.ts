@@ -220,16 +220,7 @@ export function formatEth(transaction: TransactionResponse): TX {
                     for(let i=1;i<res.args.data.length;i++){
                         transaction.data=res.args.data[i]
                         tx.additionalTxs.push(formatEth(transaction));
-                    }
-
-                    // console.log("res data",res.args.data[0])
-
-                    // const decode = routerFace.decodeFunctionData(res.args.data[0].substring(0,10),res.args.data[0]);
-                    // console.log("decode",decode);
-            
-                    
-
-                    
+                    }                    
                 } else if (methodCode === MethodCode.stake) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
@@ -239,7 +230,8 @@ export function formatEth(transaction: TransactionResponse): TX {
                     const res:any = routerFace.parseTransaction(transaction)
                     tx.amountIn = res.args.amount;
                     tx.amountOut = BigNumber.from("0x"+res.args.data.substring(216,258));
-                    const tokenOut = "0x"+res.args.data.substring(90,130).toLowerCase();
+                    let tokenOut = "0x"+res.args.data.substring(90,130).toLowerCase();
+                    if(tokenOut.substring(0,20)==="0x000000000000000000") tokenOut = constants.AddressZero;
                     tx.path=[res.args.tokenFrom.toLowerCase(),tokenOut]
                     tx.router = transaction.to.toLowerCase() as Lowercase<string>;
                     tx.to = tx.from;
