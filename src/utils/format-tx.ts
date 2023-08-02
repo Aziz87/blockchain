@@ -180,12 +180,14 @@ export function formatEth(transaction: TransactionResponse): TX {
                     tx.to = "0x" + hexAddress.substr(2).toLowerCase() as Lowercase<string>
                     tx.amountIn = value;
                     tx.amountOut = value;
+                    tx.path = [transaction.to.toLowerCase() as Lowercase<string>]
                 } else if (methodCode === MethodCode.transferFrom) {
                     const [sender, recipient, value] = decodeParams(transaction.data);
                     tx.from = "0x" + sender.substr(2).toLowerCase() as Lowercase<string>
                     tx.to = "0x" + recipient.substr(2).toLowerCase() as Lowercase<string>
                     tx.amountIn = value;
                     tx.amountOut = value;
+                    tx.path = [transaction.to.toLowerCase() as Lowercase<string>]
                 } else if (methodCode === MethodCode.addLiquidityETH) {
                     const [token, amountTokenDesired, amountTokenMin, amountETHMin, to, deadline] = decodeParams(transaction.data);
                     tx.to = "0x" + to.substr(2).toLowerCase() as Lowercase<string>
