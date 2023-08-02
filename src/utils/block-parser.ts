@@ -50,7 +50,7 @@ export default class BlockParser extends EventEmitter {
         }
     }
 
-    async parseBlock(blockNumber: number, toBlockNumber?: number){
+    async parseBlock(blockNumber: number, toBlockNumber?: number, _try:number=1){
         try {
             if (this.net.symbol === Symbol.TRX) {
                 const tronMethods:TronMethods = this.bc.getTronMethods[this.net.id];
@@ -58,8 +58,11 @@ export default class BlockParser extends EventEmitter {
                 const transactions: BlockTransaction[] = blocks.map(x => x.transactions || []).reduce((a, b) => [...a, ...b], []);
                 this.emit(events.NEW_TRANSACTIONS, this.net, transactions, blockNumber, toBlockNumber);
             } else {
-                const block = await this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions(blockNumber);
-                if(!block) throw new Error("Block not parsed...")
+                const block = await this.bc.getLimitter(this.net.id).schedule(() =>  this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions(blockNumber));
+                if(!block) {
+                    if(_try>=3)throw new Error("Block not parsed...");
+                    return await this.parseBlock(blockNumber, toBlockNumber, _try+1);
+                }
                 else this.emit(events.NEW_TRANSACTIONS, this.net, block.transactions, blockNumber);
             }
         } catch (err) {
