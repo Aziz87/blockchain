@@ -1,3 +1,4 @@
+import { BigNumberish } from "ethers";
 
 export interface TornatoContract {
     instances: { amount: number, address: string }[];
@@ -69,9 +70,17 @@ export enum SwapRouterVersion {
     UNKNOWN_ROUTER = "UNKNOWN_ROUTER"
 }
 
+export interface Quoter{
+    v:number;
+    address:Lowercase<string>;
+    methodName:string;
+    supportedFees:BigNumberish[]
+}
+
 export interface SwapRouter {
     version:SwapRouterVersion;
-    address:Lowercase<string>
+    address:Lowercase<string>,
+    quoters?:Quoter[]
 }
 
 export interface NET {

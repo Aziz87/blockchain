@@ -20,6 +20,7 @@ import { TronTransaction } from "./tron/tron-methods-d";
 import { constants } from "ethers";
 import TronWeb from "tronweb";
 import {BlockWithTransactions,Log,Block} from "@ethersproject/abstract-provider"
+import { getQuote } from "./utils/quoter";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -62,6 +63,13 @@ export const events = {
      NEW_TRANSACTIONS: "NEW_TRANSACTIONS",
      NEW_LOGS: "NEW_LOGS",
 }
+
+
+
+export const low=function(str:string):Lowercase<string>{
+    return str.toLowerCase() as Lowercase<string>
+}
+
 
 export class Blockchain {
 
@@ -233,6 +241,7 @@ export class Blockchain {
             return await limitter.schedule(()=>provider.getTransactionReceipt(hash))
         }
     }
+
 
 
     public async getContractAbi(net:NET|number, contractAddress:string){
@@ -532,11 +541,28 @@ export class Blockchain {
         }
     }
 
+
+
+
+    public async getUniswapV3QuiteV2(net:NET|number, tokenIn:Lowercase<string>, tokenOut:Lowercase<string>, amountIn:BigNumberish, fee:BigNumberish="3000",sqrtPriceLimitX96:BigNumberish="0" ){
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        return await getQuote(this, net, tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96)
+    }
+
+
     public async getAmountsIn(net:NET|number, amountOut:BigNumberish, path:string[], router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
         return await this.getSwapRouterContract(net,undefined,router).getAmountsIn(amountOut, path);
     }
 
-    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, path:string[], router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
+    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, path:string[], router:SwapRouterVersion|undefined=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        const quoters = net.swapRouters.find(x=>x.version===router)?.quoters;
+        if(quoters && quoters.length){
+            const quoter = quoters.sort((a,b)=>a.v>b.v?-1:1)[0];
+            return [amountIn,(await this.getUniswapV3QuiteV2(net,low(path[0]), low(path[1]),amountIn, quoter.supportedFees[0]))?.amountOut]
+        }
         return await this.getSwapRouterContract(net,undefined,router).getAmountsOut(amountIn, path);
     }
 
@@ -547,7 +573,6 @@ export class Blockchain {
     public async getAmountOut(net:NET|number, amountIn:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish>{
         return await this.getSwapRouterContract(net,undefined,router).etAmountOut(amountIn, reserveIn, reserveOut);
     }
-
 
 
 
