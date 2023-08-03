@@ -35,6 +35,7 @@ export function fromHex(hexAddress: string): string {
 }
 
 enum Method {
+    sendETH = "sendETH",
     transfer = "transfer",
     withdrawWETH = "withdraw",
     depositWETH = "deposit",
@@ -181,7 +182,8 @@ export function formatEth(transaction: TransactionResponse): TX {
                 tx.to = transaction.to.toLowerCase() as Lowercase<string>;
                 tx.amountIn = transaction.value;
                 tx.amountOut = transaction.value;
-                tx.path = []
+                tx.path = [constants.AddressZero]
+                tx.method = Method.sendETH;
             } else {
                 tx.path = [];
                 const methodCode = transaction.data.substring(0, 10);
