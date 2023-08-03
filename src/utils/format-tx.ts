@@ -13,6 +13,7 @@ import abiMetamaskSwapRouter from "../abi/metamask-swap-router"
 import TronDecoder from "../tron/tron-decoder";
 import { Blockchain } from "../blockchain";
 import nets from "../nets/net";
+import { join } from "path";
 
 
 const TransferTopic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
@@ -127,17 +128,10 @@ export class TX {
     public originalTransaction : TransactionResponse | BlockTransaction | Log;
 
 
-    async parseLogs(net:NET, bc:Blockchain):Promise<TX>{
-
+    public async parseLogs(net:NET, bc:Blockchain):Promise<TX>{
         if(this.logs.length)return this;
         const receipt = await bc.getTransactionReceipt(net, this.hash) as providers.TransactionReceipt;
         this.logs = receipt.logs.map(log=>formatLog(log))
-        const specialLog = this.logs.find(log=>log.from===this.from && log.to===this.to && this.method===log.method);
-        if(specialLog){
-            this.amountIn=specialLog.amountIn;
-            this.amountOut=specialLog.amountOut;
-        }
-        return this;
     }
 
 
@@ -284,8 +278,8 @@ export function formatLog(log:Log):TX{
     tx.path = [log.address.toLowerCase() as Lowercase<string>];
     if(log.topics[0]===TransferTopic){
         const d = face.erc20.decodeEventLog("Transfer", log.data, log.topics)
-        tx.from = d.from;
-        tx.to=d.to;
+        tx.from = d.from.toLowerCase();
+        tx.to=d.to.toLowerCase();
         tx.method=Method.transfer;
         tx.amountIn=tx.amountOut=d.value;
     }else 
