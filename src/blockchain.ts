@@ -336,7 +336,7 @@ export class Blockchain {
     public formatTX(net:NET, transaction:BlockTransaction|TransactionResponse|Log):TX{
         if((transaction as Log)?.topics) return formatLog(transaction as Log); 
         return net.symbol === Symbol.TRX 
-        ? formatTron(net, this, transaction as BlockTransaction)
+        ? formatTron(transaction as BlockTransaction)
         : formatEth(transaction as TransactionResponse);
     }
 

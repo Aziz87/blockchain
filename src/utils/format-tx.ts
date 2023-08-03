@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish,Contract,constants,utils, } from "ethers"
+import { BigNumber, BigNumberish,Contract,constants,utils,providers } from "ethers"
 import * as TronWeb from "tronweb";
 import { Symbol, NET, SwapRouterVersion } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
@@ -123,12 +123,28 @@ export class TX {
     public static methods = Method;
     public static methodsCodes = MethodCode;
     public additionalTxs:TX[]=[];
+    public logs:TX[]=[];
+    public originalTransaction : TransactionResponse | BlockTransaction | Log;
 
 
-    public decode = async function(transaction:BlockTransaction, net:NET, bc:Blockchain):Promise<TX>{
+    async parseLogs(net:NET, bc:Blockchain):Promise<TX>{
+
+        if(this.logs.length)return this;
+        const receipt = await bc.getTransactionReceipt(net, this.hash) as providers.TransactionReceipt;
+        this.logs = receipt.logs.map(log=>formatLog(log))
+        const specialLog = this.logs.find(log=>log.from===this.from && log.to===this.to && this.method===log.method);
+        if(specialLog){
+            this.amountIn=specialLog.amountIn;
+            this.amountOut=specialLog.amountOut;
+        }
+        return this;
+    }
+
+
+    public decode = async function(net:NET, bc:Blockchain):Promise<TX>{
         if(!this.needDecode) return this;
         const decoder = new TronDecoder(net, bc)
-        const decoded = await decoder.decodeInput(transaction);
+        const decoded = await decoder.decodeInput(this.originalTransaction);
 
         const _amountIn = decoded.inputNames.indexOf("amountIn");
         const _amountInMax = decoded.inputNames.indexOf("amountInMax");
@@ -150,6 +166,7 @@ const metamaskRoutersAddresses = nets.map(x=>x.swapRouters.filter(x=>x.version==
 
 export function formatEth(transaction: TransactionResponse): TX {
     let tx = new TX();
+    tx.originalTransaction = transaction;
     tx.hash = transaction.hash;
     tx.from = transaction.from.toLowerCase() as Lowercase<string>;
     tx.amountIn = transaction?.value || 0;
@@ -262,6 +279,7 @@ export function parseDataAddresses(net:NET, transaction:BlockTransaction | Trans
 
 export function formatLog(log:Log):TX{
     const tx = new TX();
+    tx.originalTransaction = log;
     tx.hash = log.transactionHash;
     tx.path = [log.address.toLowerCase() as Lowercase<string>];
     if(log.topics[0]===TransferTopic){
@@ -299,12 +317,13 @@ export function formatLog(log:Log):TX{
 }
 
 
-export function formatTron(net:NET, bc:Blockchain, transaction:BlockTransaction):TX{
+export function formatTron(transaction:BlockTransaction):TX{
 
    
     const tronTx = new TX();
     tronTx.hash = transaction.txID;
 
+    tronTx.originalTransaction = transaction;
 
     try {
         if (transaction.raw_data?.contract) {
