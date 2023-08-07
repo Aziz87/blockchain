@@ -21,6 +21,7 @@ export enum NetworkName {
     TronNile = 'Tron Nile',
 }
 
+
 export enum Symbol {
     ETH = 'ETH',
     WETH = 'WETH',
@@ -39,7 +40,8 @@ export enum Symbol {
     WTRX = "WTRX",
     SHIB = "SHIB",
     SOL = "SOL",
-    TUSD = "TUSD"
+    TUSD = "TUSD",
+    WMATIC = "WMATIC"
 }
 
 export interface IExplorer {
