@@ -488,6 +488,14 @@ export class Blockchain {
 
 
 
+    public async swapExactTokensForTokensSupportingFeeOnTransferTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+            const contract = this.getSwapRouterContract(net, privateKey,router);
+            if (!deadline) deadline=new Date().getTime();
+            return await contract.swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, amountOutMin, path, to, deadline);
+    }
+
+
+
     public async swapTokensForExactTokens(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
