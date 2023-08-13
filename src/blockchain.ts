@@ -21,10 +21,13 @@ import { constants } from "ethers";
 import TronWeb from "tronweb";
 import {BlockWithTransactions,Log,Block} from "@ethersproject/abstract-provider"
 import { getQuote } from "./utils/quoter";
+import { NonceManager } from "@ethersproject/experimental";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
 const {JsonRpcProvider} =ethers.providers;
+
+
 
 
 const lib = {
@@ -114,6 +117,18 @@ export class Blockchain {
         Blockchain.watchCache[netId] = parser;
         return parser;
     }
+
+
+
+    private nonceManagers:NonceManager[][]=[];
+
+    public getNonceManager(netId:number, signer: Wallet):NonceManager {
+        if(!this.nonceManagers[netId])this.nonceManagers[netId]=[];
+        if(!this.nonceManagers[netId][signer.address.toLowerCase()])this.nonceManagers[netId][signer.address.toLowerCase()]=new NonceManager(signer);
+        return this.nonceManagers[netId][signer.address.toLowerCase()];
+    }
+
+
 
     public shortAddress(address: string, num: number = 6) {
         return address.substr(0, num) + "..." + address.substr(-num, num);
@@ -336,25 +351,9 @@ export class Blockchain {
         }
     }
 
-    private nonces: number[] = [];
 
-    public async getNonceAndUp(net:NET|number, address: string): Promise<number> {
-        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
-        else net = net as NET;
-
-        let nonce = this.nonces[address];
-        if (!nonce) {
-            const provider = this.getProvider<ethers.providers.JsonRpcProvider>(net);
-            nonce = await this.getLimitter(net.id).schedule(() => provider.getTransactionCount(address, "pending"));
-        }
-        this.nonces[address] = nonce + 1;
-        return this.nonces[address];
-    }
-
+  
     
-    public async clearNonce(address) {
-        this.nonces[address] = 0
-    }
 
     public formatTX(net:NET, transaction:BlockTransaction|TransactionResponse|Log):TX{
         if((transaction as Log)?.topics) return formatLog(transaction as Log); 
@@ -486,8 +485,8 @@ export class Blockchain {
     public async send(net: NET, token: Token, privateKey: string, amount: number, to: string, nativeBalanceBN?: ethers.BigNumber, fee?: ethers.BigNumber): Promise<ethers.providers.TransactionResponse> {
 
         const provider = this.getProvider<ethers.providers.JsonRpcProvider>(net, privateKey);
-        const wallet = new ethers.Wallet(privateKey, provider);
-        const nonce = await this.getNonceAndUp(net, wallet.address);
+        const wallet = this.getNonceManager(net.id,new ethers.Wallet(privateKey, provider));
+        
 
         if (net.symbol === token.symbol) {
             let value = ethers.BigNumber.from(ethers.utils.parseUnits(amount + "", token.decimals))
@@ -496,17 +495,15 @@ export class Blockchain {
                 if ((value.add(fee)).gt(nativeBalanceBN)) value = nativeBalanceBN.sub(fee);
             }
             try {
-                return await this.getLimitter(net).schedule(() => wallet.sendTransaction({ to, value, nonce }))
+                return await this.getLimitter(net).schedule(() => wallet.sendTransaction({ to, value }))
             } catch (err) {
-                this.clearNonce(wallet.address);
                 console.log(err.message);
             }
         } else {
             const value = ethers.BigNumber.from(ethers.utils.parseUnits(amount.toFixed(18), token.decimals))
             try {
-                return await this.getLimitter(net).schedule(() => this.getERC20Contract(token).connect(wallet).transfer(to, value, { nonce }))
+                return await this.getLimitter(net).schedule(() => this.getERC20Contract(token).connect(wallet).transfer(to, value))
             } catch (err) {
-                this.clearNonce(wallet.address);
                 console.log(err.message);
             }
         }
@@ -541,25 +538,23 @@ export class Blockchain {
             if(!router) throw new Error(`Router ${version} not found for network ${net.name}`);
 
             return privateKey
-            ? new Contract(router.address, pancakeRouterV2, new Wallet(privateKey, provider))
+            ? new Contract(router.address, pancakeRouterV2,  this.getNonceManager(net.id,new Wallet(privateKey, provider)))
             : new Contract(router.address, pancakeRouterV2, provider)
         }
     }
 
 
-    public async swapETHForExactTokens(net:NET|number, privateKey:string, value:BigNumber, amountOut:BigNumber, path:string[],to:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
+    public async swapETHForExactTokens(net:NET|number, privateKey:string, value:BigNumber, amountOut:BigNumber, path:string[],to:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse >{
             const contract = this.getSwapRouterContract(net, privateKey, router);
             if(!deadline)deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapETHForExactTokens(amountOut, path, to, deadline, {value,nonce});
+            return this.getLimitter(net).schedule(contract.swapETHForExactTokens(amountOut, path, to, deadline, {value}));
     }
 
 
     public async swapExactETHForTokens(net:NET|number, privateKey:string, value:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if(!deadline)deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapExactETHForTokens(amountOutMin, path, to, deadline, {value,nonce});
+            return this.getLimitter(net).schedule(contract.swapExactETHForTokens(amountOutMin, path, to, deadline, {value}));
     }
 
 
@@ -567,8 +562,7 @@ export class Blockchain {
     public async swapExactTokensForTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline,{nonce});
+            return this.getLimitter(net).schedule(contract.swapExactTokensForTokens(amountIn, amountOutMin, path, to, deadline));
     }
 
 
@@ -576,8 +570,7 @@ export class Blockchain {
     public async swapExactTokensForTokensSupportingFeeOnTransferTokens(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, amountOutMin, path, to, deadline,{nonce});
+            return this.getLimitter(net).schedule(()=>contract.swapExactTokensForTokensSupportingFeeOnTransferTokens(amountIn, amountOutMin, path, to, deadline));
     }
 
 
@@ -585,16 +578,14 @@ export class Blockchain {
     public async swapTokensForExactTokens(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapTokensForExactTokens(amountOut, amountInMax, path, to, deadline,{nonce});
+            return this.getLimitter(net).schedule(()=>contract.swapTokensForExactTokens(amountOut, amountInMax, path, to, deadline));
     }
 
 
     public async swapTokensForExactETH(net:NET|number, privateKey:string, amountOut:BigNumber, amountInMax:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapTokensForExactETH(amountOut, amountInMax, path, to, deadline,{nonce});
+            return this.getLimitter(net).schedule(contract.swapTokensForExactETH(amountOut, amountInMax, path, to, deadline));
     }
 
 
@@ -602,8 +593,7 @@ export class Blockchain {
     public async swapExactTokensForETH(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
-            const nonce = await this.getNonceAndUp(net,await contract.signer.getAddress());
-            return await contract.swapExactTokensForETH(amountIn, amountOutMin, path, to, deadline,{nonce});
+            return this.getLimitter(net).schedule(contract.swapExactTokensForETH(amountIn, amountOutMin, path, to, deadline));
     }
 
     public async getAllowance(net:NET|number, tokenAddress:string, ownerAddress: string, spenderAddress: string ): Promise<BigNumberish> {
@@ -632,11 +622,9 @@ export class Blockchain {
             return limitter.schedule(() => tronMethods.approve(privateKey,tokenAddress,spender,amount));
         }else{
             const provider = this.getProvider<providers.JsonRpcProvider>(net);
-            const wallet = new Wallet(privateKey, provider)
-            const nonce = await this.getNonceAndUp(net, wallet.address);
-
+            const wallet =  this.getNonceManager(net.id,new Wallet(privateKey, provider));
             const contract = new Contract(tokenAddress, erc20, wallet);
-            return await limitter.schedule(()=>contract.approve(spender, amount,{nonce}));
+            return  await limitter.schedule(()=>contract.approve(spender, amount));
         }
     }
 
