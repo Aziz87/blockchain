@@ -466,7 +466,7 @@ export class Blockchain {
                 const gasLimit = ethers.BigNumber.from(21000);
                 return gasLimit.mul(gasPrice);
             } else {
-                const value = ethers.BigNumber.from(ethers.utils.parseUnits(amount + "", token.decimals))
+                const value = ethers.BigNumber.from(ethers.utils.parseUnits(amount.toFixed(18), token.decimals))
                 const gasLimit = await this.getLimitter(net).schedule(() => this.getERC20Contract(token).connect(wallet).estimateGas.transfer(to, value))
                 return gasLimit.mul(gasPrice);
             }
@@ -489,7 +489,7 @@ export class Blockchain {
         
 
         if (net.symbol === token.symbol) {
-            let value = ethers.BigNumber.from(ethers.utils.parseUnits(amount + "", token.decimals))
+            let value = ethers.BigNumber.from(ethers.utils.parseUnits(amount.toFixed(18), token.decimals))
             if (nativeBalanceBN) {
                 if (!fee) fee = await this.calcFee(net, token, privateKey, amount, to);
                 if ((value.add(fee)).gt(nativeBalanceBN)) value = nativeBalanceBN.sub(fee);
