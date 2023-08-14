@@ -488,7 +488,7 @@ export class Blockchain {
         const wallet = this.getNonceManager(net.id,new ethers.Wallet(privateKey, provider));
         
 
-        if (net.symbol === token.symbol) {
+        if (token.address===ethers.constants.AddressZero) {
             let value = ethers.BigNumber.from(ethers.utils.parseUnits(amount.toFixed(18), token.decimals))
             if (nativeBalanceBN) {
                 if (!fee) fee = await this.calcFee(net, token, privateKey, amount, to);
