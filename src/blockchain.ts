@@ -20,7 +20,7 @@ import { TronTransaction } from "./tron/tron-methods-d";
 import { constants } from "ethers";
 import TronWeb from "tronweb";
 import {BlockWithTransactions,Log,Block} from "@ethersproject/abstract-provider"
-import { getQuote } from "./utils/quoter";
+import { quoteExactInputSingle, quoteExactOutputSingle } from "./utils/quoter";
 import { NonceManager } from "@ethersproject/experimental";
 
 const WAValidator = require('multicoin-address-validator');
@@ -631,26 +631,97 @@ export class Blockchain {
 
 
 
-    public async getUniswapV3QuiteV2(net:NET|number, tokenIn:Lowercase<string>, tokenOut:Lowercase<string>, amountIn:BigNumberish, fee:BigNumberish="3000",sqrtPriceLimitX96:BigNumberish="0" ){
+    public async getUniswapV3quoteExactInputSingle(net:NET|number, tokenIn:Lowercase<string>, tokenOut:Lowercase<string>, amountIn:BigNumberish, fee:BigNumberish="3000",sqrtPriceLimitX96:BigNumberish="0" ){
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
-        return await getQuote(this, net, tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96)
+        return await quoteExactInputSingle(this, net, tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96)
     }
 
 
-    public async getAmountsIn(net:NET|number, amountOut:BigNumberish, path:string[], router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
-        return await this.getSwapRouterContract(net,undefined,router).getAmountsIn(amountOut, path);
+    public async getUniswapV3quoteExactOutputSingle(net:NET|number, tokenIn:Lowercase<string>, tokenOut:Lowercase<string>, amountIn:BigNumberish, fee:BigNumberish="3000",sqrtPriceLimitX96:BigNumberish="0" ){
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        return await quoteExactOutputSingle(this, net, tokenIn, tokenOut, amountIn, fee, sqrtPriceLimitX96)
     }
 
-    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, path:string[], router:SwapRouterVersion|undefined=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
+
+    public async getAmountsAndPath(net:NET|number,  tokenIn:string, tokenOut:string, amount:BigNumberish, method:"getAmountsIn"|"getAmountsOut"):Promise<{path:string[], amounts:BigNumberish[]}>{
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        
+        const pathVariants = [
+            [tokenIn, tokenOut],
+            [tokenIn, net.wrapedNativToken.address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="USDT").address, tokenOut],
+            [tokenIn, net.tokens.find(x=>x.symbol==="USDT").address, net.wrapedNativToken.address, tokenOut]
+        ]
+
+        const target = net.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2).address;
+        const face = new Interface(pancakeRouterV2)
+
+        const items: MultiCallItem[] = pathVariants.map((path, i) => ({ target, method, arguments: [amount,path], face }))
+        const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
+
+        const data = result[method][target];
+        const variant = data.findIndex(x=>x);
+
+        const path = variant>-1 ? pathVariants[variant] : pathVariants[0];
+        const amounts = variant>-1 ? data[variant] : [method==="getAmountsIn"?0:amount, method==="getAmountsOut"?0:amount];
+
+        return {path, amounts}
+    }
+
+
+    /**
+     * 
+     * @deprecated use getAmountsAndPath
+     * @param net 
+     * @param amountOut 
+     * @param tokenIn 
+     * @param tokenOut 
+     * @param routerVersion 
+     * @returns 
+     */
+    public async getAmountsIn(net:NET|number, amountOut:BigNumberish, tokenIn:string, tokenOut:string, routerVersion:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
+        
+        if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
+        else net = net as NET;
+        const quoters = net.swapRouters.find(x=>x.version===routerVersion)?.quoters;
+        if(quoters && quoters.length){
+            const quoter = quoters.sort((a,b)=>a.v>b.v?-1:1)[0];
+            return [(await this.getUniswapV3quoteExactOutputSingle(net,low(tokenIn), low(tokenOut), amountOut, quoter.supportedFees[0]))?.amountIn, amountOut]
+        }
+
+
+        const cool = await this.getAmountsAndPath(net,tokenIn,tokenOut,amountOut,"getAmountsIn");
+        return cool.amounts
+
+        //  return await this.getSwapRouterContract(net,undefined,routerVersion).getAmountsIn(amountOut, [tokenIn, tokenOut]);
+    }
+
+
+    /**
+     * @deprecated use getAmountsAndPath
+     * @param net 
+     * @param amountIn 
+     * @param tokenIn 
+     * @param tokenOut 
+     * @param router 
+     * @returns 
+     */
+    public async getAmountsOut(net:NET|number, amountIn:BigNumberish, tokenIn:string, tokenOut:string, router:SwapRouterVersion|undefined=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish[]>{
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;
         else net = net as NET;
         const quoters = net.swapRouters.find(x=>x.version===router)?.quoters;
         if(quoters && quoters.length){
             const quoter = quoters.sort((a,b)=>a.v>b.v?-1:1)[0];
-            return [amountIn,(await this.getUniswapV3QuiteV2(net,low(path[0]), low(path[1]),amountIn, quoter.supportedFees[0]))?.amountOut]
+            return [amountIn,   (await this.getUniswapV3quoteExactInputSingle(net,low(tokenIn), low(tokenOut),amountIn, quoter.supportedFees[0]))?.amountOut]
         }
-        return await this.getSwapRouterContract(net,undefined,router).getAmountsOut(amountIn, path);
+
+
+        const cool = await this.getAmountsAndPath(net,tokenIn,tokenOut,amountIn,"getAmountsOut");
+        return cool.amounts
+        // return await this.getSwapRouterContract(net,undefined,router).getAmountsOut(amountIn, [tokenIn, tokenOut]);
     }
 
     public async getAmountIn(net:NET|number, amountOut:BigNumberish, reserveIn:BigNumberish, reserveOut:BigNumberish, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<BigNumberish>{

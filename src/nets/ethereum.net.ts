@@ -11,7 +11,7 @@ const Ethereum: NET = {
         block: 'https://etherscan.io/block/'
     },
     rpc: { name: 'SecureRPC', url: 'https://api.securerpc.com/v1' },
-    multicall: "0xeefba1e63905ef1d7acba5a8513c70307c1ce441",
+    multicall: "0x9e223239efac780fff9d54241a71d329e6522451",
     tornadoContracts: [{
         instances: [
             { amount: 0.1, address: '0x12D66f87A04A9E220743712cE6d9bB1B5616B8Fc' },

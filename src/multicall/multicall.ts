@@ -32,26 +32,33 @@ export async function multiCall(config: NET, items: MultiCallItem[]): Promise<an
         const face = items[i].face;
         if (!result[method]) result[method] = [];
         let val = null;
+
         try {
             val = response.returnData[i] === "0x" ? null : face.decodeFunctionResult(items[i].method, response.returnData[i]);
         } catch (err) {
-            console.error(err);
-            console.error("Face Decode error", { target, method, data: response.returnData[i] })//+target+" : "+items[i].method+" "+response,err)
+            // console.error(err);
+            // console.error(i,"Face Decode error", { target, method, data: response.returnData[i] })//+target+" : "+items[i].method+" "+response,err)
         }
 
         if (key) {
             result[key] = val;
         } else {
+            if(val==null)val=[null];
             if (result[method][target]) {
-                if (val === null) val = [[null]]
-
+                // if (val === null) val = [[null]]
                 // @ts-ignore
-                if (Array.isArray(result[method][target])) result[method][target] = [...result[method][target], ...val];
-                else result[method][target] = [result[method][target], ...val];
+               
+                if (Array.isArray(result[method][target])) {
+                    result[method][target] = [...result[method][target], ...val];
+                }
+                else {
+                    result[method][target] = [result[method][target], ...val];
+                }
             } else {
                 result[method][target] = val;
             }
         }
+
 
     }
     return result;
