@@ -652,7 +652,10 @@ export class Blockchain {
         const pathVariants = [
             [tokenIn, tokenOut],
             [tokenIn, net.wrapedNativToken.address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="BUSD").address, tokenOut],
             [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="USDT").address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="WBTC").address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="WETH").address, tokenOut],
             [tokenIn, net.tokens.find(x=>x.symbol==="USDT").address, net.wrapedNativToken.address, tokenOut]
         ]
 
@@ -662,11 +665,12 @@ export class Blockchain {
         const items: MultiCallItem[] = pathVariants.map((path, i) => ({ target, method, arguments: [amount,path], face }))
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
 
-        const data = result[method][target];
-        const variant = data.findIndex(x=>x);
+        const data:{x:BigNumber[],i:number}[]= result[method][target].map((x:BigNumberish[],i:number)=>({x:BigNumber.from(x),i}));
 
-        const path = variant>-1 ? pathVariants[variant] : pathVariants[0];
-        const amounts = variant>-1 ? data[variant] : [method==="getAmountsIn"?0:amount, method==="getAmountsOut"?0:amount];
+        const variant = data.filter(x=>x).sort((a,b)=>a.x[a.x.length-1].gt(b.x[b.x.length-1]) ? -1 : 1)[0];
+
+        const path = variant ? pathVariants[variant.i] : pathVariants[0];
+        const amounts = variant ? variant.x : [method==="getAmountsIn"?0:amount, method==="getAmountsOut"?0:amount];
 
         return {path, amounts}
     }
