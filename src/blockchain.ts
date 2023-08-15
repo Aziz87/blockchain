@@ -665,9 +665,13 @@ export class Blockchain {
         const items: MultiCallItem[] = pathVariants.map((path, i) => ({ target, method, arguments: [amount,path], face }))
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
 
-        const data:{x:BigNumber[],i:number}[]= result[method][target].map((x:BigNumberish[],i:number)=>({x:BigNumber.from(x),i}));
+        const _data = result[method][target];
+        // console.log(_data.map(x=>x?.map(a=>a/1e18)))
+        const data:{x:BigNumber[],i:number}[]= !_data? [] :_data.map((x:BigNumberish[],i:number)=>(!x?null:{x:x.map(y=>BigNumber.from(y)),i}));
 
-        const variant = data.filter(x=>x).sort((a,b)=>a.x[a.x.length-1].gt(b.x[b.x.length-1]) ? -1 : 1)[0];
+        const variant = method==="getAmountsIn"
+            ?data.filter(x=>x).sort((a,b)=>a.x[0].lt(b.x[0]) ? -1 : 1)[0]
+            :data.filter(x=>x).sort((a,b)=>a.x[a.x.length-1].gt(b.x[b.x.length-1]) ? -1 : 1)[0]
 
         const path = variant ? pathVariants[variant.i] : pathVariants[0];
         const amounts = variant ? variant.x : [method==="getAmountsIn"?0:amount, method==="getAmountsOut"?0:amount];
