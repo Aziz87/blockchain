@@ -715,13 +715,15 @@ export class Blockchain {
         const method = "getAmountsOut";
         const multipler =1;
 
-        const items: any[] = tokens.map((token, i) => [
+        const items: any[] = tokens.map((token, i) => {
+            if(token.address===ethers.constants.AddressZero)token.address=net.wrapedNativToken.address;
+            return[
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, token.address]], face },
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, token.address]], face },
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, BUSD.address, net.wrapedNativToken.address, token.address]], face },
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, BUSD.address, token.address]], face },
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, BUSD.address,  token.address]], face },
-        ]).reduce((a,b)=>[...a,...b],[]);
+        ]}).reduce((a,b)=>[...a,...b],[]);
 
 
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
