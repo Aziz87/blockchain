@@ -728,7 +728,7 @@ export class Blockchain {
 
         const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
 
-        const data = result[method][target];
+        const data = result[method]? result[method][target]:[];
         const results= tokens.map(x=>0)
 
     
