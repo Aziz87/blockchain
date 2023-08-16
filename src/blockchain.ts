@@ -689,7 +689,7 @@ export class Blockchain {
 
 
 
-    public async getPricesUSDT(_net:NET|number,  tokens:Token[]):Promise<BigNumberish[]>{
+    public async getPricesUSDT(_net:NET|number,  tokens:Token[]):Promise<number[]>{
         const net = Number.isInteger(_net) ? this.getNet(_net as number) as NET : _net as NET;
         
         
