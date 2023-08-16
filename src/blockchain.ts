@@ -197,6 +197,13 @@ export class Blockchain {
         return tkns;
     }
 
+
+    /**
+     * @deprecated use getPricesUSDT
+     * @param tokens 
+     * @param netId 
+     * @returns 
+     */
     public async getTokensPriceUSD(tokens: Lowercase<string>[], netId: number) {
         const tkns = await this.getTokensInfo(netId, tokens,true);
         const config = this.getConfig(netId);
@@ -677,6 +684,70 @@ export class Blockchain {
         const amounts = variant ? variant.x : [method==="getAmountsIn"?0:amount, method==="getAmountsOut"?0:amount];
 
         return {path, amounts}
+    }
+
+
+
+
+    public async getPricesUSDT(_net:NET|number,  tokens:Token[]):Promise<BigNumberish[]>{
+        const net = Number.isInteger(_net) ? this.getNet(_net as number) as NET : _net as NET;
+        
+        
+
+        const USDT = net.tokens.find(x=>x.symbol==="USDT");
+
+        if(!USDT) throw new Error(`PLEASE ADD USDT TOKEN FOR ${net.name} network. net.tokens.push({symbol:"USDT", decimals:..., address:..., name:"USDT Token"})`);
+
+
+
+        let BUSD = net.tokens.find(x=>x.symbol==="BUSD") || USDT
+        // const pathVariants = tokens.map((token,i)=>({
+        //     path:[
+        //         [token.address, USDT.address],
+        //         [token.address, net.wrapedNativToken.address, USDT.address],
+        //     ],
+        //     key:i
+        // }))
+
+        const target = net.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2).address;
+        const face = new Interface(pancakeRouterV2)
+
+        const method = "getAmountsOut";
+        const multipler =1;
+
+        const items: any[] = tokens.map((token, i) => [
+            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, token.address]], face },
+            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, token.address]], face },
+            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, BUSD.address, net.wrapedNativToken.address, token.address]], face },
+            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, BUSD.address, token.address]], face },
+            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, BUSD.address,  token.address]], face },
+        ]).reduce((a,b)=>[...a,...b],[]);
+
+
+        const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
+
+        const data = result[method][target];
+        const results= tokens.map(x=>0)
+
+    
+        for(let i =0; i<data.length;i++){
+            if(data[i]){
+                const item = items[i]
+                if(item?.token){
+                    const amounts = data[i]
+                    const result =multipler/ Number(ethers.utils.formatUnits(amounts[amounts.length-1], item.token.decimals))
+                    if(item.token.address===USDT.address) results[item.index]=1;
+                    else {
+                        if(results[item.index])continue;//results[item.index]=Math.min(result,results[item.index])
+                        else results[item.index]= result;
+                    }
+                    // console.log( item.token.symbol, result,data[i], item.arguments[1] )
+                }
+            }//else console.log("NO PATH",items[i].arguments[1])
+        }
+
+        return results;
+    
     }
 
 
