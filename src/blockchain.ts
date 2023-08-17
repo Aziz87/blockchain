@@ -387,7 +387,7 @@ export class Blockchain {
             for (let i=0;i<balances.length;i++) {
                 const balance = balances[i];
                 if(!balance.token) balance.token = {name:net.name, symbol:net.symbol, decimals:net.decimals,address:ethers.constants.AddressZero};
-                
+
                 if(balance.token.address===ethers.constants.AddressZero) {
                     items.push({ target: net.multicall, method: "getEthBalance", arguments: [balance.user], face: faceMulticall,key:"i"+i })
                 }
@@ -399,7 +399,6 @@ export class Blockchain {
             const result: number[] = [];
 
             for (let i=0;i<balances.length;i++) {
-                console.log(response["i"+i][0], balances[i].token.decimals)
                 result.push(Number(formatUnits(response["i"+i][0], balances[i].token.decimals)));
             }
 
