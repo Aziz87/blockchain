@@ -376,43 +376,29 @@ export class Blockchain {
         return this.tronMethodos[net.id];
     }
 
-    public async getBalances(netId: number, addresses: string[], tokens: Token[] = []): Promise<number[][]> {
-        try {
-            const config = this.getConfig(netId);
-            if (config.symbol == Symbol.TRX) {
-                if (!tokens.find(x => x.symbol === Symbol.TRX)) {
-                    tokens.unshift({ symbol: Symbol.TRX, decimals: 6, address: fromHex('0x0000000000000000000000000000000000000000') })
-                }
-                
-                const tronMethods = this.getTronMethods(netId)
-                const arr:number[] = await this.getLimitter(netId).schedule(()=>tronMethods.getBalances(addresses, tokens.map(x => x.address)));
-                const res: number[][] = tokens.map(x=>[]);
-                
-                while(arr.length){
-                    const userPart = arr.splice(0,tokens.length);
-                    userPart.forEach((x,i)=>res[i].push((Number(x / Number('1e' + tokens[i].decimals)))))
-                }
-                
-                return res;
-            }
+    public async getBalances(_net: NET|number, balances:{user:string, token:Token}[]): Promise<number[]> {
+        const net:NET = Number.isInteger(_net) ? this.getNet(_net as number) as NET : _net as NET;
 
+        try {
 
             const faceMulticall = new Interface(MULTICALL)
             const faceERC = new Interface(erc20)
-            const items: MultiCallItem[] = addresses.map(address => ({ target: config.multicall, method: "getEthBalance", arguments: [address], face: faceMulticall }))
-            for (let token of tokens) {
-                for (let address of addresses)
-                    items.push({ target: token.address, method: "balanceOf", arguments: [address], face: faceERC })
+            const items: MultiCallItem[] = []
+            for (let i=0;i<balances.length;i++) {
+                const balance = balances[i];
+                if(balance.token.address===ethers.constants.AddressZero) {
+                    items.push({ target: net.multicall, method: "getEthBalance", arguments: [balance.user], face: faceMulticall,key:"i"+i })
+                }
+                else items.push({ target: balance.token.address, method: "balanceOf", arguments: [balance.user], face: faceERC,key:"i"+i  })
             }
 
-            const response = await this.getLimitter(netId).schedule(()=>multiCall(config, items));
-            if(!response.getEthBalance) return null;
-            const ethBalances = response.getEthBalance[config.multicall].map(x => Number(formatEther(x)));
-            const result: number[][] = [ethBalances];
+            const response = await this.getLimitter(net.id).schedule(()=>multiCall(net, items));
 
-            for (let token of tokens) {
-                if(token.address===constants.AddressZero)continue;
-                result.push(response.balanceOf[token.address].map(x => Number(formatUnits(x, token.decimals))));
+            const result: number[] = [];
+
+            for (let i=0;i<balances.length;i++) {
+                console.log(response["i"+i][0], balances[i].token.decimals)
+                result.push(Number(formatUnits(response["i"+i][0], balances[i].token.decimals)));
             }
 
             return result;
@@ -496,7 +482,7 @@ export class Blockchain {
         
 
         if (token.address===ethers.constants.AddressZero) {
-            let value = ethers.BigNumber.from(ethers.utils.parseUnits(amount.toFixed(18), token.decimals))
+            let value = ethers.BigNumber.from(ethers.utils.parseUnits(amount.toFixed(18), net.decimals))
             if (nativeBalanceBN) {
                 if (!fee) fee = await this.calcFee(net, token, privateKey, amount, to);
                 if ((value.add(fee)).gt(nativeBalanceBN)) value = nativeBalanceBN.sub(fee);
