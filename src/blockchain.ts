@@ -376,7 +376,7 @@ export class Blockchain {
         return this.tronMethodos[net.id];
     }
 
-    public async getBalances(_net: NET|number, balances:{user:string, token:Token}[]): Promise<number[]> {
+    public async getBalances(_net: NET|number, balances:{user:string, token?:Token}[]): Promise<number[]> {
         const net:NET = Number.isInteger(_net) ? this.getNet(_net as number) as NET : _net as NET;
 
         try {
@@ -386,6 +386,8 @@ export class Blockchain {
             const items: MultiCallItem[] = []
             for (let i=0;i<balances.length;i++) {
                 const balance = balances[i];
+                if(!balance.token) balance.token = {name:net.name, symbol:net.symbol, decimals:net.decimals,address:ethers.constants.AddressZero};
+                
                 if(balance.token.address===ethers.constants.AddressZero) {
                     items.push({ target: net.multicall, method: "getEthBalance", arguments: [balance.user], face: faceMulticall,key:"i"+i })
                 }
