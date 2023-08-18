@@ -1,6 +1,6 @@
-import sunSwapRouterV2 from "src/abi/sun-swap-router-v2";
+import sunSwapRouterV2 from "../abi/sun-swap-router-v2";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
-import sunSwapRouterV3 from "src/abi/sun-swap-router-v3";
+import sunSwapRouterV3 from "../abi/sun-swap-router-v3";
 const dotenv = require("dotenv").config()
 if (!process.env.TRONGRID_APIKEY) console.error("PLEASE SET TRONGRID_APIKEY to .env file for use tron methods!");
 

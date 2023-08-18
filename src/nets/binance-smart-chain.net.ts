@@ -1,7 +1,7 @@
-import metamaskSwapRouter from "src/abi/metamask-swap-router";
+import metamaskSwapRouter from "../abi/metamask-swap-router";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
-import pancakeRouterV2 from "src/abi/pancake-router-v2";
-import pancakeRouterV3 from "src/abi/pancake-router-v3";
+import pancakeRouterV2 from "../abi/pancake-router-v2";
+import pancakeRouterV3 from "../abi/pancake-router-v3";
 
 
 const BinanceSmartChain: NET = {
