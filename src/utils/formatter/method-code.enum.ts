@@ -1,0 +1,25 @@
+
+export enum MethodCode {
+    swap = "0x5f575529",
+    transfer = "0xa9059cbb",
+    transferFrom = "0x23b872dd",
+    addLiquidityETH = "0xf305d719",
+    addLiquidity = "0xe8e33700",
+    removeLiquidity = "0xbaa2abde",
+    stake = "0x952e68cf",
+    approve = "0x095ea7b3",
+    swapExactTokensForTokens = "0x38ed1739",
+    swapTokensForExactTokens = "0x8803dbee",
+    swapExactETHForTokens = "0x7ff36ab5",
+    swapTokensForExactETH = "0x4a25d94a",
+    swapExactTokensForETH = "0x18cbafe5",
+    swapETHForExactTokens = "0xfb3bdb41",
+    swapExactTokensForETHSupportingFeeOnTransferTokens = "0x791ac947",
+    swapExactETHForTokensSupportingFeeOnTransferTokens = "0xb6f9de95",
+    swapTokensForExactTokens_v3 = "0x42712a67",
+    swapExactTokensForTokens_v3 = "0x472b43f3",
+    multicall_v3_1 = "0x5ae401dc",
+    multicall_v3_2 = "0xac9650d8",
+    multicall_v3_3 = "0x1f0464d1",
+    removeLiquidityETH = "0xf305d719"
+}

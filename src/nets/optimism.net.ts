@@ -1,4 +1,6 @@
+import pancakeRouterV2 from "src/abi/pancake-router-v2";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import pancakeRouterV3 from "src/abi/pancake-router-v3";
 
 const Optimism: NET = {
     id: 10,
@@ -33,8 +35,8 @@ const Optimism: NET = {
     ],
     requestsPerSecond:5,
     swapRouters:[
-        {version:SwapRouterVersion.UNISWAP_V2,  address: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45"},
-        {version:SwapRouterVersion.UNISWAP_V3,  address: "0xe592427a0aece92de3edee1f18e0157c05861564"},
+        {version:SwapRouterVersion.UNISWAP_V2,  address: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45", abi:pancakeRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V3,  address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:pancakeRouterV3},
     ]
 }
 

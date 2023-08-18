@@ -13,7 +13,7 @@ import { TronMethods, fromHex } from './tron/tron-methods';
 import { Cron, Expression } from '@reflet/cron';
 import * as crypto from "./utils/crypto"
 import NetParser from "./utils/block-parser"
-import {formatTron,formatEth, TX, formatLog} from "./utils/format-tx"
+import {formatTron} from "./utils/formatter/format-tx-tron"
 import  {TransactionResponse} from "@ethersproject/abstract-provider"
 import { BlockInfo, BlockTransaction } from "./tron/interfaces";
 import { TronTransaction } from "./tron/tron-methods-d";
@@ -22,6 +22,9 @@ import TronWeb from "tronweb";
 import {BlockWithTransactions,Log,Block} from "@ethersproject/abstract-provider"
 import { quoteExactInputSingle, quoteExactOutputSingle } from "./utils/quoter";
 import { NonceManager } from "@ethersproject/experimental";
+import { TX } from "./utils/formatter/TX";
+import { formatLog } from "./utils/formatter/format-logs";
+import { formatEth } from "./utils/formatter/format-tx-eth";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -532,8 +535,8 @@ export class Blockchain {
             if(!router) throw new Error(`Router ${version} not found for network ${net.name}`);
 
             return privateKey
-            ? new Contract(router.address, pancakeRouterV2,  this.getNonceManager(net.id,new Wallet(privateKey, provider)))
-            : new Contract(router.address, pancakeRouterV2, provider)
+            ? new Contract(router.address, router.abi,  this.getNonceManager(net.id,new Wallet(privateKey, provider)))
+            : new Contract(router.address, router.abi, provider)
         }
     }
 

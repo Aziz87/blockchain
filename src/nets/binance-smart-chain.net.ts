@@ -1,4 +1,7 @@
+import metamaskSwapRouter from "src/abi/metamask-swap-router";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import pancakeRouterV2 from "src/abi/pancake-router-v2";
+import pancakeRouterV3 from "src/abi/pancake-router-v3";
 
 
 const BinanceSmartChain: NET = {
@@ -36,9 +39,9 @@ const BinanceSmartChain: NET = {
         { symbol: Symbol.WBTC, address: '0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c', decimals: 18 },
     ],
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31"},
-        {version:SwapRouterVersion.UNISWAP_V2, address: "0x10ed43c718714eb63d5aa57b78b54704e256024e"},
-        {version:SwapRouterVersion.UNISWAP_V3, address: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4", quoters:[
+        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31", abi:metamaskSwapRouter},
+        {version:SwapRouterVersion.UNISWAP_V2, address: "0x10ed43c718714eb63d5aa57b78b54704e256024e", abi:pancakeRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V3, address: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4", abi:pancakeRouterV3, quoters:[
             {v:1, address:"0x678aa4bf4e210cf2166753e054d5b7c31cc7fa86",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]},
             {v:2, address:"0xb048bbc1ee6b733fffcfb9e9cef7375518e25997",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]}
         ]},

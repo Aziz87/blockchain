@@ -82,7 +82,8 @@ export interface Quoter{
 export interface SwapRouter {
     version:SwapRouterVersion;
     address:Lowercase<string>,
-    quoters?:Quoter[]
+    quoters?:Quoter[],
+    abi:any
 }
 
 export interface NET {

@@ -1,4 +1,7 @@
+import metamaskSwapRouter from "src/abi/metamask-swap-router";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import pancakeRouterV2 from "src/abi/pancake-router-v2";
+import pancakeRouterV3 from "src/abi/pancake-router-v3";
 
 const Ethereum: NET = {
     id: 1,
@@ -32,9 +35,9 @@ const Ethereum: NET = {
     ],
 
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x881d40237659c251811cec9c364ef91dc08d300c"},
-        {version:SwapRouterVersion.UNISWAP_V2, address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d"},
-        {version:SwapRouterVersion.UNISWAP_V3, address: "0xe592427a0aece92de3edee1f18e0157c05861564", quoters:[
+        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x881d40237659c251811cec9c364ef91dc08d300c", abi:metamaskSwapRouter},
+        {version:SwapRouterVersion.UNISWAP_V2, address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:pancakeRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V3, address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:pancakeRouterV3, quoters:[
                 {v:1,address:"0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6",methodName:"uniswapV3SwapCallback",supportedFees:[   10000n, 3000n,500n, 100n]},
                 {v:2,address:"0x61ffe014ba17989e743c5f6cb21bf9697530b21e",methodName:"uniswapV3SwapCallback",supportedFees:[   10000n, 3000n,500n, 100n]}
             ],

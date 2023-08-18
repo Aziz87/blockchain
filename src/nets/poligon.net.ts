@@ -1,4 +1,6 @@
+import pancakeRouterV2 from "src/abi/pancake-router-v2";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import pancakeRouterV3 from "src/abi/pancake-router-v3";
 
 const Poligon: NET = {
     id: 137,
@@ -32,8 +34,8 @@ const Poligon: NET = {
     ],
     requestsPerSecond:5,
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31"},
-        {version:SwapRouterVersion.UNISWAP_V3, address: "0xe592427a0aece92de3edee1f18e0157c05861564", quoters:[
+        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31", abi:pancakeRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V3, address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:pancakeRouterV3, quoters:[
             {v:2, address:"0xe592427a0aece92de3edee1f18e0157c05861564",methodName:"uniswapV3SwapCallback",supportedFees:[10000n, 3000n, 500n, 100n]}
         ]},
     ]

@@ -1,4 +1,6 @@
+import sunSwapRouterV2 from "src/abi/sun-swap-router-v2";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import sunSwapRouterV3 from "src/abi/sun-swap-router-v3";
 const dotenv = require("dotenv").config()
 if (!process.env.TRONGRID_APIKEY) console.error("PLEASE SET TRONGRID_APIKEY to .env file for use tron methods!");
 
@@ -28,8 +30,8 @@ const Tron: NET = {
     ],
     requestsPerSecond:14,
     swapRouters:[
-        {version:SwapRouterVersion.SUNSWAP_V2, address:"0x6e0617948fe030a7e4970f8389d4ad295f249b7e"},
-        {version:SwapRouterVersion.SUNSWAP_V3, address:"0x3c9e0ac33f138216c50638d71c344a299d0d1030"},
+        {version:SwapRouterVersion.SUNSWAP_V2, address:"0x6e0617948fe030a7e4970f8389d4ad295f249b7e", abi:sunSwapRouterV2},
+        {version:SwapRouterVersion.SUNSWAP_V3, address:"0x3c9e0ac33f138216c50638d71c344a299d0d1030", abi:sunSwapRouterV3},
     ]
 
 }

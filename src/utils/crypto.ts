@@ -1,7 +1,7 @@
 
 import * as crypto from "crypto";
 import { Contract, Wallet, ethers } from "ethers";
-import { fromHex } from "./format-tx";
+import { fromHex } from "../tron/tron-methods";
 const {getAddress, verifyMessage} = ethers.utils;
 const { JsonRpcProvider} = ethers.providers;
 
