@@ -26,7 +26,7 @@ import { TX } from "./utils/formatter/TX";
 import { formatLog } from "./utils/formatter/format-logs";
 import { formatEth } from "./utils/formatter/format-tx-eth";
 import { uniswapV3Decode } from "./dex/uniswap/uniswap-decoder";
-import { TransactionDescription } from "ethers/lib/utils";
+import { FunctionFragment, TransactionDescription } from "ethers/lib/utils";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -379,6 +379,7 @@ export class Blockchain {
         for(let response of responses){
             const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
 
+            if(!response.to) return [{response, description:{args:[{address:response['creates']}], functionFragment:FunctionFragment.from(''), name:"deploy", sighash:"", signature:"", value:response.value}}]
             try {
                 const face = response.data==="0x"
                 ? undefined :
@@ -396,7 +397,7 @@ export class Blockchain {
                 }
                  results.push(...parse(response));
             } catch (err) {
-                console.log("err", router?.version, err.message)
+                // console.log("err", router?.version, err.message, response.hash)
             }
         }
         return results;
