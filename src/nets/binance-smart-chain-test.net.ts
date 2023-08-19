@@ -1,4 +1,4 @@
-import pancakeRouterV2 from "../abi/pancake-router-v2";
+import uniswapRouterV2 from "../abi/uniswap-router-v2";
 import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
 import pancakeRouterV3 from "../abi/pancake-router-v3";
 
@@ -26,7 +26,7 @@ const BinanceSmartChainTestnet: NET = {
     ],
     miningBlockSeconds: 3,
     swapRouters:[
-        {version:SwapRouterVersion.UNISWAP_V2, address:"0x9ac64cc6e4415144c455bd8e4837fea55603e5c3", abi:pancakeRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V2, address:"0x9ac64cc6e4415144c455bd8e4837fea55603e5c3", abi:uniswapRouterV2},
         {version:SwapRouterVersion.UNISWAP_V3, address:"0x9a489505a00ce272eaa5e07dba6491314cae3796", abi:pancakeRouterV3, quoters:[
             {v:2,address:"0x13f4ea83d0bd40e75c8222255bc855a974568dd4",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]}
         ]},

@@ -1,7 +1,7 @@
 import erc20 from "../../abi/erc20";
 import abiPancakePair from "../../abi/pancake-pair"
 import wrappedETH from "../../abi/weth"
-import abiPancakeRouterV2 from "../../abi/pancake-router-v2"
+import abiPancakeRouterV2 from "../../abi/uniswap-router-v2"
 import abiPancakeRouterV3 from "../../abi/pancake-router-v3"
 import abiMetamaskSwapRouter from "../../abi/metamask-swap-router"
 import { Interface } from "ethers/lib/utils";

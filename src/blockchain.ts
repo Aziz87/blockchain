@@ -3,7 +3,7 @@ import axios from 'axios';
 import Bottleneck from 'bottleneck';
 import { BigNumberish, Contract,ethers,Wallet,providers, BigNumber } from 'ethers';
 import erc20 from './abi/erc20';
-import pancakeRouterV2 from './abi/pancake-router-v2';
+import pancakeRouterV2 from './abi/uniswap-router-v2';
 import { multiCall } from './multicall/multicall';
 import MULTICALL from './multicall/multicall-abi';
 import { MultiCallItem } from './multicall/multicall.i';
@@ -25,6 +25,8 @@ import { NonceManager } from "@ethersproject/experimental";
 import { TX } from "./utils/formatter/TX";
 import { formatLog } from "./utils/formatter/format-logs";
 import { formatEth } from "./utils/formatter/format-tx-eth";
+import { uniswapV3Decode } from "./dex/uniswap/uniswap-decoder";
+import { TransactionDescription } from "ethers/lib/utils";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -34,7 +36,9 @@ const {JsonRpcProvider} =ethers.providers;
 
 
 const lib = {
-    nets, multiCall
+    nets, multiCall, abi:{
+        erc20
+    }
 }
  
 
@@ -70,6 +74,9 @@ export const events = {
      NEW_LOGS: "NEW_LOGS",
 }
 
+export const uniswapV3 = {
+    decoder:uniswapV3Decode
+}
 
 
 export const low=function(str:string):Lowercase<string>{
@@ -362,6 +369,38 @@ export class Blockchain {
     }
 
 
+
+    
+    /**
+     * Парсим транзакции 
+     */
+    public descript(net: NET, responses: ethers.providers.TransactionResponse[]):{response:TransactionResponse, description:TransactionDescription}[] {
+        const results = [];
+        for(let response of responses){
+            const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
+
+            try {
+                const face = response.data==="0x"
+                ? undefined :
+                    router 
+                        ? new ethers.Contract(response.to, router.abi).interface
+                        : new ethers.Contract(response.to, erc20).interface;
+                function parse(response:TransactionResponse): any[] {
+                    const description = response?.data==="0x"
+                    ? {args:[], functionFragment:"0x", name:"sendETH", signature:"send(address, uint256)", sighash:"0x", value:response.value }
+                    : face?.parseTransaction(response)
+                    if (description && router?.version === SwapRouterVersion.UNISWAP_V3 && description.name === "multicall") {
+                        return description.args['data'].map((data: string) => parse({ ...response, data })).reduce((a, b) => [...a, ...b], []);
+                    }
+                    return [{ response, description }]
+                }
+                 results.push(...parse(response));
+            } catch (err) {
+                console.log("err", router?.version, err.message)
+            }
+        }
+        return results;
+    }
   
     
 
@@ -371,6 +410,9 @@ export class Blockchain {
         ? formatTron(transaction as BlockTransaction)
         : formatEth(transaction as TransactionResponse);
     }
+
+
+
 
     public getTronMethods(net:NET|number):TronMethods{
         if(Number.isInteger(net)) net = this.getNet(net as number) as NET;

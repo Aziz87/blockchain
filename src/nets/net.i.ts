@@ -63,13 +63,15 @@ export interface Token {
     name?:string;
 }
 
+
 export enum SwapRouterVersion {
-    UNISWAP_V2 ="UNISWAP_V2",
-    UNISWAP_V3 ="UNISWAP_V3",
-    SUNSWAP_V2 ="SUNSWAP_V2",
-    SUNSWAP_V3 ="SUNSWAP_V3",
-    METAMASK_SWAP ="METAMASK_SWAP",
-    UNKNOWN_ROUTER = "UNKNOWN_ROUTER"
+    UNISWAP_V2 = "UNISWAP_V2",
+    UNISWAP_V3 = "UNISWAP_V3",
+    SUNSWAP_V2 = "SUNSWAP_V2",
+    SUNSWAP_V3 = "SUNSWAP_V3",
+    METAMASK_SWAP = "METAMASK_SWAP",
+    UNKNOWN_ROUTER = "UNKNOWN_ROUTER",
+    UNIVERSAL_ROUTER = "UNIVERSAL_ROUTER"
 }
 
 export interface Quoter{
