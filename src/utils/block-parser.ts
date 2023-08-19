@@ -1,4 +1,4 @@
-import { providers } from "ethers";
+import { ethers, providers } from "ethers";
 import { EventEmitter } from "stream";
 import { Symbol, NET } from "../nets/net.i";
 import { BlockTransaction } from "../tron/interfaces";
@@ -25,51 +25,69 @@ export default class BlockParser extends EventEmitter {
         this.logs=logs;
         if(Number.isInteger(net)) this.net = this.bc.getNet(net as number) as NET;
         else this.net = net as NET;
-        this.skipBlocks = 1;
+        this.skipBlocks = 0;
         if (this.net.symbol === Symbol.TRX) this.blockParseRange = TRON_BLOCKS_PARSE_RANGE;
         
-        setInterval(this.onNewBlock.bind(this), this.net.miningBlockSeconds * 1000 * 0.95 * this.blockParseRange);
-        this.onNewBlock();
+        setInterval(this.parsePending.bind(this), this.net.miningBlockSeconds * 1000 * 0.95 * this.blockParseRange);
+        this.parsePending();
+        
     }
 
-
-    async onNewBlock() {//
-        try {
-            const blockNumber = await this.bc.getBlockNumber(this.net);
-            if (!blockNumber) return;
-            this.blockNumber = blockNumber;
-            if (!this.lastParsedBlock) this.lastParsedBlock = this.blockNumber - 2;
-            if (this.lastParsedBlock > this.blockNumber - this.skipBlocks) return;
-            if (this.blockParseRange > 1 && this.lastParsedBlock >= this.blockNumber - 1) return;
-            const toBlock = Math.min(this.lastParsedBlock + this.blockParseRange, this.blockNumber)
-            this.parseBlock(this.lastParsedBlock + 1, toBlock);
-            if(this.logs) this.parseLogs(this.lastParsedBlock+1, toBlock);
-            this.lastParsedBlock = toBlock;
-        } catch (err) {
-            console.log("error parse new block", err);
-        }
-    }
-
-    async parseBlock(blockNumber: number, toBlockNumber?: number, _try:number=1){
-        try {
-            if (this.net.symbol === Symbol.TRX) {
-                const tronMethods:TronMethods = this.bc.getTronMethods[this.net.id];
-                const blocks = await this.bc.getLimitter(this.net.id).schedule(() => tronMethods.getBlockRange(blockNumber, toBlockNumber))
-                const transactions: BlockTransaction[] = blocks.map(x => x.transactions || []).reduce((a, b) => [...a, ...b], []);
-                this.emit(events.NEW_TRANSACTIONS, this.net, transactions, blockNumber, toBlockNumber);
-            } else {
-                const block = await this.bc.getLimitter(this.net.id).schedule(() =>  this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions(blockNumber));
-                if(!block) {
-                    if(_try>=3)throw new Error("Block not parsed...");
-                    await new Promise(r=>setTimeout(r,3000))
-                    return await this.parseBlock(blockNumber, toBlockNumber, _try+1);
-                }
-                else this.emit(events.NEW_TRANSACTIONS, this.net, block.transactions, blockNumber);
+    private parsed:number=0;
+    private async parsePending(){
+        try{
+            const block = await this.bc.getLimitter(this.net.id).schedule(() =>  this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions("pending"));
+            if(block){
+                if(this.parsed>=block.number)return;
+            this.emit(events.NEW_TRANSACTIONS, this.net, block.transactions, block.number);
+            this.parsed=block.number;
+            console.log("block",block.number)
             }
-        } catch (err) {
-            console.log(`network ${this.net.id}: error parse block ${blockNumber}`, err)
+        }catch(err){
+            
         }
     }
+
+
+    // async onNewBlock(blockNumber?:number) {//
+    //     try {
+         
+    //         if(!blockNumber) blockNumber = await this.bc.getBlockNumber(this.net);
+    //         if (!blockNumber) return;
+    //         this.blockNumber = blockNumber;
+    //         if (!this.lastParsedBlock) this.lastParsedBlock = this.blockNumber - 2;
+    //         // if (this.lastParsedBlock > this.blockNumber - this.skipBlocks) return;
+    //         if (this.blockParseRange > 1 && this.lastParsedBlock >= this.blockNumber - 1) return;
+    //         const toBlock = Math.min(this.lastParsedBlock + this.blockParseRange, this.blockNumber)
+    //         this.parseBlock(this.lastParsedBlock + 1, toBlock);
+    //         if(this.logs) this.parseLogs(this.lastParsedBlock+1, toBlock);
+    //         this.lastParsedBlock = toBlock;
+    //     } catch (err) {
+    //         console.log("error parse new block", err);
+    //     }
+    // }
+
+    // async parseBlock(blockNumber: number, toBlockNumber?: number, _try:number=1){
+    //     try {
+    //         if (this.net.symbol === Symbol.TRX) {
+    //             const tronMethods:TronMethods = this.bc.getTronMethods[this.net.id];
+    //             const blocks = await this.bc.getLimitter(this.net.id).schedule(() => tronMethods.getBlockRange(blockNumber, toBlockNumber))
+    //             const transactions: BlockTransaction[] = blocks.map(x => x.transactions || []).reduce((a, b) => [...a, ...b], []);
+    //             this.emit(events.NEW_TRANSACTIONS, this.net, transactions, blockNumber, toBlockNumber);
+    //         } else {
+    //             const block = await this.bc.getLimitter(this.net.id).schedule(() =>  this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions(blockNumber+3));
+    //             if(!block) {
+    //                 if(_try>=3)throw new Error("Block not parsed...");
+    //                 await new Promise(r=>setTimeout(r,3000))
+    //                 return await this.parseBlock(blockNumber, toBlockNumber, _try+1);
+    //             }
+    //             else this.emit(events.NEW_TRANSACTIONS, this.net, block.transactions, blockNumber);
+    //             console.log("block",block.number)
+    //         }
+    //     } catch (err) {
+    //         console.log(`network ${this.net.id}: error parse block ${blockNumber}`, err)
+    //     }
+    // }
 
     async parseLogs(fromBlock: number, toBlock?: number){
         try {

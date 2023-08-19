@@ -379,7 +379,10 @@ export class Blockchain {
         for(let response of responses){
             const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
 
-            if(!response.to) return [{response, description:{args:[{address:response['creates']}], functionFragment:FunctionFragment.from(''), name:"deploy", sighash:"", signature:"", value:response.value}}]
+            if(!response.to)  {
+                return [{response, description:{args:[response['creates']], functionFragment:undefined, name:"deploy", sighash:"", signature:"", value:response.value}}]
+            }
+            
             try {
                 const face = response.data==="0x"
                 ? undefined :
