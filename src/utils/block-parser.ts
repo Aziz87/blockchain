@@ -12,12 +12,13 @@ const TRON_BLOCKS_PARSE_RANGE = 5;
 export default class BlockParser extends EventEmitter {
     
     public blockNumber: number = 0;
-    private lastParsedBlock: number = 0;
-    private skipBlocks: number;
+    // private lastParsedBlock: number = 0;
     private net: NET;
     private blockParseRange: number = 1;
     private bc:Blockchain;
     private logs:boolean=false;
+    private lastParsedBlockNumbers:number[] = [];
+
 
     constructor(bc:Blockchain, net: NET|number, logs:boolean) {
         super();
@@ -25,26 +26,35 @@ export default class BlockParser extends EventEmitter {
         this.logs=logs;
         if(Number.isInteger(net)) this.net = this.bc.getNet(net as number) as NET;
         else this.net = net as NET;
-        this.skipBlocks = 0;
         if (this.net.symbol === Symbol.TRX) this.blockParseRange = TRON_BLOCKS_PARSE_RANGE;
         
-        setInterval(this.parsePending.bind(this), this.net.miningBlockSeconds * 1000 * 0.95 * this.blockParseRange);
-        this.parsePending();
+        // setInterval(this.parsePending.bind(this), this.net.miningBlockSeconds * 1000 * 0.95 * this.blockParseRange);
+        // this.parsePending();
+        this.bc.getProvider<providers.JsonRpcProvider>(this.net).on("block", this.parsePending.bind(this));
         
     }
 
-    private parsed:number=0;
-    private async parsePending(){
+
+
+    private async parsePending(blockNumber?:number){
         try{
-            const block = await this.bc.getLimitter(this.net.id).schedule(() =>  this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions("pending"));
+            const block = await this.bc.getLimitter(this.net.id).schedule(() =>  this.bc.getProvider<providers.JsonRpcProvider>(this.net).getBlockWithTransactions(blockNumber || "pending"));
             if(block){
-                if(this.parsed>=block.number)return;
-            this.emit(events.NEW_TRANSACTIONS, this.net, block.transactions, block.number);
-            this.parsed=block.number;
-            console.log("block",block.number)
+                if(this.lastParsedBlockNumbers.length && !this.lastParsedBlockNumbers.includes(block.number-1)){
+                    this.parsePending(block.number-1)
+                }
+                if(this.lastParsedBlockNumbers.includes(block.number)) return// console.log("already parsed",block.number);
+
+                this.emit(events.NEW_TRANSACTIONS, this.net, block.transactions, block.number);
+                this.lastParsedBlockNumbers.push(block.number)
+                if(this.lastParsedBlockNumbers.length>20)this.lastParsedBlockNumbers.shift();
+                // const prevBlockNumber = this.lastParsedBlockNumbers[this.lastParsedBlockNumbers.length-2];
+                // if(prevBlockNumber && prevBlockNumber<block.number-1)this.parsePending(block.number-1);
+                // console.log(this.lastParsedBlockNumbers.join(', '))
+
             }
         }catch(err){
-            
+            console.log("err",err?.message)
         }
     }
 

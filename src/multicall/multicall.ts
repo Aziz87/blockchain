@@ -63,3 +63,43 @@ export async function multiCall(config: NET, items: MultiCallItem[]): Promise<an
     }
     return result;
 }
+
+
+
+
+export async function multiCallLinear(config: NET, items: MultiCallItem[]): Promise<any[]> {
+    const provider = new JsonRpcProvider(config.rpc.url);
+    const contractMulticall = new Contract(config.multicall, ABI, provider);
+
+    const multicallArgs = items.map(item => ({
+        target: item.target,
+        callData: item.face.encodeFunctionData(item.method, item.arguments),
+        returnData: ''
+    }));
+
+    let response = null;
+    try {
+        response = await contractMulticall.aggregate(multicallArgs).catch((err: any) => {
+            // console.error('Ups... multicall error...', err)
+        });
+    } catch (err: any) {
+        // console.error('multicall error', err);
+    }
+
+    const result: any[] = [];
+    if (response) for (let i = 0; i < items.length; i++) {
+        const method = items[i].method;
+        const face = items[i].face;
+        if (!result[method]) result[method] = [];
+        let val = null;
+
+        try {
+            val = response.returnData[i] === "0x" ? null : face.decodeFunctionResult(items[i].method, response.returnData[i]);
+        } catch (err) {
+            // console.error(err);
+            // console.error(i,"Face Decode error", { target, method, data: response.returnData[i] })//+target+" : "+items[i].method+" "+response,err)
+        }
+        result.push(val[0]);
+    }
+    return result;
+}

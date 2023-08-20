@@ -1,6 +1,6 @@
 import { nets } from "../../nets/net";
 import { TX } from "./TX";
-import { face } from "./faces";
+import { faces } from "./faces";
 import { BigNumber, constants, providers } from "ethers";
 import { SwapRouterVersion } from "../../nets/net.i";
 import { AbiCoder } from "ethers/lib/utils";
@@ -49,12 +49,12 @@ export function formatEth(transaction: providers.TransactionResponse): TX {
     if(transaction.to) tx.to=transaction.to.toLowerCase() as Lowercase<string>;
 
 
-    let routerFace = face.pancakeRouterV2;
+    let routerFace = faces.uniswapRouterV2;
     if(transaction.to && uniswapV3RoutersAddresses.includes(transaction.to.toLowerCase() as Lowercase<string>)){
-        routerFace = face.pancakeRouterV3;
+        routerFace = faces.uniswapRouterV3;
     }
     if(transaction.to && metamaskRoutersAddresses.includes(transaction.to.toLowerCase() as Lowercase<string>)){
-        routerFace = face.metamaskSwapRouter;
+        routerFace = faces.metamaskSwapRouter;
     }
 
     try {

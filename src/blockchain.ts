@@ -27,6 +27,7 @@ import { formatLog } from "./utils/formatter/format-logs";
 import { formatEth } from "./utils/formatter/format-tx-eth";
 import { uniswapV3Decode } from "./dex/uniswap/uniswap-decoder";
 import { FunctionFragment, TransactionDescription } from "ethers/lib/utils";
+import { DelayedCaller } from "./multicall/delayed-caller";
 
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
@@ -128,10 +129,24 @@ export class Blockchain {
         return parser;
     }
 
+    /**
+     * Get Delayed caller class
+     * @param netId - network id
+     */
+    private static delayedCallersCache:DelayedCaller[]=[];
+    public delayed(_net:NET|number):DelayedCaller{
+        const net:NET = Number.isInteger(_net) ? this.getNet(_net as number) as NET : _net as NET;
+        if(!net) throw new Error("Network not found");
+
+        if(Blockchain.delayedCallersCache[net.id]) return Blockchain.delayedCallersCache[net.id];
+        const delayedCaller = new DelayedCaller(this, net);
+        Blockchain.delayedCallersCache[net.id] = delayedCaller;
+        return delayedCaller;
+    }
+
 
 
     private nonceManagers:NonceManager[][]=[];
-
     public getNonceManager(netId:number, signer: Wallet):NonceManager {
         if(!this.nonceManagers[netId])this.nonceManagers[netId]=[];
         if(!this.nonceManagers[netId][signer.address.toLowerCase()])this.nonceManagers[netId][signer.address.toLowerCase()]=new NonceManager(signer);
@@ -380,7 +395,8 @@ export class Blockchain {
             const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
 
             if(!response.to)  {
-                return [{response, description:{args:[response['creates']], functionFragment:undefined, name:"deploy", sighash:"", signature:"", value:response.value}}]
+                results.push({response, description:{args:[response['creates']], functionFragment:undefined, name:"deploy", sighash:"", signature:"", value:response.value}});
+                continue;
             }
             
             try {

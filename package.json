@@ -1,5 +1,5 @@
 {
-  "name": "blockchain-network",
+  "name": "blockchain33",
   "types": "dist/blockchain.d.ts",
   "type": "commonjs",
   "files": [
@@ -8,7 +8,7 @@
     "README.md",
     "package.json"
   ],
-  "version": "2.1.21",
+  "version": "0.0.4",
   "description": "utilities for All blockchain like EVM (ETH)",
   "main": "dist/blockchain.js",
   "scripts": {

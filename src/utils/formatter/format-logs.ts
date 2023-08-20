@@ -1,6 +1,6 @@
 import { TX } from "./TX";
 import  { Log} from "@ethersproject/abstract-provider"
-import { face } from "./faces";
+import { faces } from "./faces";
 import { Method } from "./method.enum";
 
 
@@ -17,28 +17,28 @@ export function formatLog(log:Log):TX{
     tx.hash = log.transactionHash;
     tx.path = [log.address.toLowerCase() as Lowercase<string>];
     if(log.topics[0]===TransferTopic){
-        const d = face.erc20.decodeEventLog("Transfer", log.data, log.topics)
+        const d = faces.erc20.decodeEventLog("Transfer", log.data, log.topics)
         tx.from = d.from.toLowerCase();
         tx.to=d.to.toLowerCase();
         tx.method=Method.transfer;
         tx.amountIn=tx.amountOut=d.value;
     }else 
     if(log.topics[0]===ApprovalTopic){
-        const d = face.erc20.decodeEventLog("Approval", log.data, log.topics)
+        const d = faces.erc20.decodeEventLog("Approval", log.data, log.topics)
         tx.from = d.owner;
         tx.to=d.spender;
         tx.amountIn=tx.amountOut=d.value;
         tx.method=Method.approve;
     }else 
     if(log.topics[0]===DepositWETHTopic){
-        const d = face.weth.decodeEventLog("Deposit", log.data, log.topics)
+        const d = faces.weth.decodeEventLog("Deposit", log.data, log.topics)
         tx.from = d.dst;
         tx.to = d.dst;
         tx.amountIn=tx.amountOut=d.wad;
         tx.method=Method.depositWETH;
     }else 
     if(log.topics[0]===WithdrawWETHTopic){
-        const d = face.weth.decodeEventLog("Withdrawal", log.data, log.topics)
+        const d = faces.weth.decodeEventLog("Withdrawal", log.data, log.topics)
         tx.from = d.src;
         tx.to = d.src;
         tx.amountIn=tx.amountOut=d.wad;
