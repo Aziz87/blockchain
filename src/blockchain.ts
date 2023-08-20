@@ -25,10 +25,10 @@ import { NonceManager } from "@ethersproject/experimental";
 import { TX } from "./utils/formatter/TX";
 import { formatLog } from "./utils/formatter/format-logs";
 import { formatEth } from "./utils/formatter/format-tx-eth";
-import { uniswapV3Decode } from "./dex/uniswap/uniswap-decoder";
+import { uniswapV3Decode } from "./utils/uniswap-decoder";
 import { FunctionFragment, TransactionDescription } from "ethers/lib/utils";
 import { DelayedCaller } from "./multicall/delayed-caller";
-
+import {Pair, Route, Router, Trade} from "custom-uniswap-v2-sdk"
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
 const {JsonRpcProvider} =ethers.providers;
@@ -39,7 +39,11 @@ const {JsonRpcProvider} =ethers.providers;
 const lib = {
     nets, multiCall, abi:{
         erc20
-    }
+    },
+    route:Route,
+    router:Router,
+    trade:Trade,
+    pair:Pair
 }
  
 
@@ -231,13 +235,12 @@ export class Blockchain {
      */
     public async getTokensPriceUSD(tokens: Lowercase<string>[], netId: number) {
         const tkns = await this.getTokensInfo(netId, tokens,true);
-        const config = this.getConfig(netId);
-        const USDT = config.tokens.find(x => x.symbol === Symbol.USDT)
+        const net = this.getConfig(netId);
         const face = new Interface(pancakeRouterV2)
-        const target = config.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2)?.address;
-        if(!target) throw new Error(`Router UNISWAP_V2 not found for network ${config.name}`);
-        const items: MultiCallItem[] = tokens.map((address, i) => ({ target, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, USDT.address]], face }))
-        const result = await this.getLimitter(netId).schedule(()=> multiCall(config, items));
+        const target = net.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2)?.address;
+        if(!target) throw new Error(`Router UNISWAP_V2 not found for network ${net.name}`);
+        const items: MultiCallItem[] = tokens.map((address, i) => ({ target, method: "getAmountsOut", arguments: [parseUnits("1", tkns[i].decimals), [address, net.tokens.USDT.address]], face }))
+        const result = await this.getLimitter(netId).schedule(()=> multiCall(net, items));
         return result;
     }
 
@@ -451,7 +454,7 @@ export class Blockchain {
             const items: MultiCallItem[] = []
             for (let i=0;i<balances.length;i++) {
                 const balance = balances[i];
-                if(!balance.token) balance.token = {name:net.name, symbol:net.symbol, decimals:net.decimals,address:ethers.constants.AddressZero};
+                if(!balance.token) balance.token = new Token(net.id,ethers.constants.AddressZero,net.decimals,net.symbol,net.name);
 
                 if(balance.token.address===ethers.constants.AddressZero) {
                     items.push({ target: net.multicall, method: "getEthBalance", arguments: [balance.user], face: faceMulticall,key:"i"+i })
@@ -711,11 +714,11 @@ export class Blockchain {
         const pathVariants = [
             [tokenIn, tokenOut],
             [tokenIn, net.wrapedNativToken.address, tokenOut],
-            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="BUSD").address, tokenOut],
-            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="USDT").address, tokenOut],
-            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="WBTC").address, tokenOut],
-            [tokenIn,  net.wrapedNativToken.address, net.tokens.find(x=>x.symbol==="WETH").address, tokenOut],
-            [tokenIn, net.tokens.find(x=>x.symbol==="USDT").address, net.wrapedNativToken.address, tokenOut]
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.BUSD.address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.USDT.address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.WBTC.address, tokenOut],
+            [tokenIn,  net.wrapedNativToken.address, net.tokens.WETH.address, tokenOut],
+            [tokenIn, net.tokens.USDT.address, net.wrapedNativToken.address, tokenOut]
         ]
 
         const target = net.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2).address;
@@ -746,13 +749,13 @@ export class Blockchain {
         
         
 
-        const USDT = net.tokens.find(x=>x.symbol==="USDT");
 
-        if(!USDT) throw new Error(`PLEASE ADD USDT TOKEN FOR ${net.name} network. net.tokens.push({symbol:"USDT", decimals:..., address:..., name:"USDT Token"})`);
-
+        if(!net.tokens.USDT) throw new Error(`PLEASE ADD USDT TOKEN FOR ${net.name} network. net.tokens.push({symbol:"USDT", decimals:..., address:..., name:"USDT Token"})`);
 
 
-        let BUSD = net.tokens.find(x=>x.symbol==="BUSD") || USDT
+
+        const USDT =  net.tokens.USDT;
+        const BUSD = net.tokens.BUSD || net.tokens.USDT
         // const pathVariants = tokens.map((token,i)=>({
         //     path:[
         //         [token.address, USDT.address],
@@ -768,7 +771,7 @@ export class Blockchain {
         const multipler =1;
 
         const items: any[] = tokens.map((token, i) => {
-            if(token.address===ethers.constants.AddressZero)token.address=net.wrapedNativToken.address;
+            if(token.address===ethers.constants.AddressZero)token=net.wrapedNativToken;
             return[
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, token.address]], face },
             { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, token.address]], face },

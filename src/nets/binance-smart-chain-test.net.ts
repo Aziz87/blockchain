@@ -1,9 +1,10 @@
 import uniswapRouterV2 from "../abi/uniswap-router-v2";
-import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion, Token } from "./net.i";
 import pancakeRouterV3 from "../abi/pancake-router-v3";
 
+const id = 97;
 const BinanceSmartChainTestnet: NET = {
-    id: 97,
+    id,
     name: NetworkName.BinanceSmartChainTestnet,
     symbol: Symbol.BNB,
     decimals:18,
@@ -26,14 +27,18 @@ const BinanceSmartChainTestnet: NET = {
     ],
     miningBlockSeconds: 3,
     swapRouters:[
-        {version:SwapRouterVersion.UNISWAP_V2, address:"0x9ac64cc6e4415144c455bd8e4837fea55603e5c3", abi:uniswapRouterV2},
-        {version:SwapRouterVersion.UNISWAP_V3, address:"0x9a489505a00ce272eaa5e07dba6491314cae3796", abi:pancakeRouterV3, quoters:[
+        {version:SwapRouterVersion.UNISWAP_V2, address:"0x9ac64cc6e4415144c455bd8e4837fea55603e5c3", factory:"0xb7926c0430afb07aa7defde6da862ae0bde767bc", abi:uniswapRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V3, address:"0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865", factory:"0xb7926c0430afb07aa7defde6da862ae0bde767bc",   abi:pancakeRouterV3, quoters:[
             {v:2,address:"0x13f4ea83d0bd40e75c8222255bc855a974568dd4",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]}
         ]},
     ],
-    wrapedNativToken: { symbol: Symbol.WBNB, decimals: 18, address: "0xae13d989dac2f0debff460ac112a837c89baa7cd" },
-    tokens: [{ symbol: Symbol.USDT, decimals: 18, address: "0x337610d27c682e347c9cd60bd4b3b107c9d34ddd" }],
-    requestsPerSecond:5
+    wrapedNativToken: new Token(id,"0xae13d989dac2f0debff460ac112a837c89baa7cd",18,Symbol.WBNB, "WBNB"),
+    tokens:{
+        USDT:new Token(id,"0x337610d27c682e347c9cd60bd4b3b107c9d34ddd",18,Symbol.USDT, "USDT"),
+    },
+
+
+    requestsPerSecond:5,
 
 }
 

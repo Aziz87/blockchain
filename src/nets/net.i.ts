@@ -1,4 +1,5 @@
-import { BigNumberish } from "ethers";
+import { BigNumberish, ethers } from "ethers";
+import {Token as UniswapToken} from "@uniswap/sdk-core"
 
 export interface TornatoContract {
     instances: { amount: number, address: string }[];
@@ -56,11 +57,10 @@ export interface IRPC {
     apiKey?: string;
 }
 
-export interface Token {
-    symbol: Symbol;
-    decimals: number;
-    address: string
-    name?:string;
+export class Token extends UniswapToken {
+    constructor(chainId:number, address:string, decimals:number, symbol:string, name:string){
+       super(chainId, address, decimals, symbol, name)
+    }
 }
 
 
@@ -84,11 +84,13 @@ export interface Quoter{
 export interface SwapRouter {
     version:SwapRouterVersion;
     address:Lowercase<string>,
+    factory:string,
     quoters?:Quoter[],
     abi:any
 }
 
 export interface NET {
+    
     id: number;//1
     name: NetworkName// 'Ethereum Mainnet',
     symbol: Symbol;//'eth',
@@ -102,7 +104,14 @@ export interface NET {
     // uniswapRouterV3: Lowercase<string>;
     swapRouters:SwapRouter[];
     wrapedNativToken: Token;
-    tokens: Token[];
+    tokens: {
+        USDT?:Token,
+        BUSD?:Token,
+        USDC?:Token,
+        WBTC?:Token,
+        WETH?:Token,
+    }
+
     requestsPerSecond:number;
 }
 

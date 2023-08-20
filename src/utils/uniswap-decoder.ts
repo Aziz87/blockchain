@@ -1,5 +1,5 @@
 import { AbiCoder, Interface } from "ethers/lib/utils";
-import uniswapRouterV3 from "../../abi/uniswap-router-v3";
+import uniswapRouterV3 from "../abi/uniswap-router-v3";
 import { BigNumber, ethers } from "ethers";
 
 const swapCodes = {

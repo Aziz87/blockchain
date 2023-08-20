@@ -1,10 +1,10 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, Token } from "./net.i";
 const dotenv = require("dotenv").config()
 if (!process.env.TRONGRID_APIKEY) console.error("PLEASE SET TRONGRID_APIKEY to .env file for use tron-nile methods!");
 
-
+const id = 1001;
 const TronNile: NET = {
-    id: 1001,
+    id,
     name: NetworkName.TronNile,
     symbol: Symbol.TRX,
     decimals:6,
@@ -19,12 +19,12 @@ const TronNile: NET = {
 
     ],
     miningBlockSeconds: 3,
-    wrapedNativToken: { address: '0xfb3b3134f13ccd2c81f4012e53024e8135d58fee', decimals: 6, symbol: Symbol.WTRX },
-    tokens: [
-        { address: '0xea51342dabbb928ae1e576bd39eff8aaf070a8c6', decimals: 6, symbol: Symbol.USDT }
-    ],
+    wrapedNativToken: new Token(id, "0xfb3b3134f13ccd2c81f4012e53024e8135d58fee", 6, Symbol.WTRX, "WTRX"),//{ address: '0xfb3b3134f13ccd2c81f4012e53024e8135d58fee', decimals: 6, symbol: Symbol.WTRX },
+    tokens: {
+        USDT: new Token(id, "0xea51342dabbb928ae1e576bd39eff8aaf070a8c6", 6, Symbol.USDT, "USDT")
+    },
     swapRouters:[],
-    requestsPerSecond:5
+    requestsPerSecond:5,
 }
 
 export default TronNile;

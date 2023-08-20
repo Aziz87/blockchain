@@ -1,7 +1,8 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, Token } from "./net.i";
 
+const id = 100;
 const Gnosis: NET = {
-    id: 100,
+    id,
     name: NetworkName.GnosisChain,
     decimals:18,
     symbol: Symbol.xDAI,
@@ -22,11 +23,13 @@ const Gnosis: NET = {
     }],
     miningBlockSeconds: 5,
     wrapedNativToken: null,
-    tokens: [
-        { symbol: Symbol.USDT, decimals: 6, address: "0x4ecaba5870353805a9f068101a40e0f32ed605c6" }
-    ],
     swapRouters:[],
-    requestsPerSecond:3
-}
+    requestsPerSecond:3,
+    tokens:{
+        USDT: new Token(id,"0x4ecaba5870353805a9f068101a40e0f32ed605c6",6, Symbol.USDT, "USDT"),
+    }
+
+ }
+
 
 export default Gnosis;

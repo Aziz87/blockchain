@@ -1,11 +1,12 @@
 import metamaskSwapRouter from "../abi/metamask-swap-router";
-import { Symbol, NET, NetworkName, SwapRouterVersion } from "./net.i";
+import { Symbol, NET, NetworkName, SwapRouterVersion, Token } from "./net.i";
 import uniswapRouterV2 from "../abi/uniswap-router-v2";
 import uniswapRouterV3 from "../abi/uniswap-router-v3";
 import universalRouter from "../abi/universal-router";
 
+const id = 1;
 const Ethereum: NET = {
-    id: 1,
+    id,
     name: NetworkName.EthereumMainnet,
     symbol: Symbol.ETH,
     decimals:18,
@@ -25,27 +26,27 @@ const Ethereum: NET = {
         ], symbol: Symbol.ETH, decimals: 18
     }],
     miningBlockSeconds: 15,
-    wrapedNativToken: { symbol: Symbol.WETH, decimals: 18, address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" },
-    tokens: [
-        {   symbol: Symbol.USDT, address: "0xdac17f958d2ee523a2206206994597c13d831ec7", decimals: 6 },
-        {   symbol: Symbol.USDC, address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', decimals: 6},
-        {   symbol: Symbol.BUSD, address: '0x4fabb145d64652a948d72533023f6e7a623c7c53', decimals: 18},
-        {   symbol: Symbol.BNB,  address: '0xb8c77482e45f1f44de1745f52c74426c631bdd52', decimals: 18},
-        {   symbol: Symbol.WBTC, address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', decimals: 8},
-          
-    ],
+    wrapedNativToken:new Token(id,"0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",18, Symbol.WETH, "WETH" ),
+
+    tokens:{
+        USDT: new Token(id,"0xdac17f958d2ee523a2206206994597c13d831ec7",6, Symbol.USDT, "USDT"),
+         BUSD:new Token(id,"0x4fabb145d64652a948d72533023f6e7a623c7c53", 18, Symbol.BUSD, "BUSD" ),
+         USDC:new Token(id,"0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6, Symbol.USDC, "USDC" ),
+         WBTC:new Token(id,"0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", 8, Symbol.WBTC, "WBTC" ),
+     },
+   
 
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, address: "0x881d40237659c251811cec9c364ef91dc08d300c", abi:metamaskSwapRouter},
-        {version:SwapRouterVersion.UNISWAP_V2, address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:uniswapRouterV2},
-        {version:SwapRouterVersion.UNISWAP_V3, address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:uniswapRouterV3, quoters:[
+        {version:SwapRouterVersion.METAMASK_SWAP, factory:"", address: "0x881d40237659c251811cec9c364ef91dc08d300c", abi:metamaskSwapRouter},
+        {version:SwapRouterVersion.UNISWAP_V2, factory:"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:uniswapRouterV2},
+        {version:SwapRouterVersion.UNISWAP_V3, factory:"0x1F98431c8aD98523631AE4a59f267346ea31F984",address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:uniswapRouterV3, quoters:[
                 {v:1,address:"0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6",methodName:"uniswapV3SwapCallback",supportedFees:[   10000n, 3000n,500n, 100n]},
                 {v:2,address:"0x61ffe014ba17989e743c5f6cb21bf9697530b21e",methodName:"uniswapV3SwapCallback",supportedFees:[   10000n, 3000n,500n, 100n]}
             ],
         },
-        {version:SwapRouterVersion.UNIVERSAL_ROUTER, address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:universalRouter},
+        {version:SwapRouterVersion.UNIVERSAL_ROUTER, factory:"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:universalRouter},
 
     ],
-    requestsPerSecond:5
+    requestsPerSecond:5,
 }
 export default Ethereum;

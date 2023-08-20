@@ -1,7 +1,8 @@
-import { Symbol, NET, NetworkName } from "./net.i";
+import { Symbol, NET, NetworkName, Token } from "./net.i";
 
+const id = 43114;
 const Avalanche: NET = {
-    id: 43114,
+    id,
     name: NetworkName.AvalancheMainnet,
     decimals:18,
     symbol: Symbol.AVAX,
@@ -23,16 +24,18 @@ const Avalanche: NET = {
     }],
     miningBlockSeconds: 1.9,
     wrapedNativToken: null,
-    tokens: [
-        { symbol: Symbol.USDT, decimals: 6, address: "0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7" },
-        { symbol: Symbol.USDC, decimals: 6, address: "0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e" },
-        { symbol: Symbol.BUSD, decimals: 18, address: "0x19860ccb0a68fd4213ab9d8266f7bbf05a8dde98" },
-        { symbol: Symbol.WETH, decimals: 18, address: "0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab" },
-        { symbol: Symbol.WBTC, decimals: 8, address: "0x50b7545627a5162f82a992c33b87adc75187b218" }
-    
-    ],
+
+    tokens:{
+        USDT:new Token(id,"0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7",6,Symbol.USDT, "USDT"),
+        USDC:new Token(id,"0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e",6,Symbol.USDC, "USDC"),
+        BUSD:new Token(id,"0x19860ccb0a68fd4213ab9d8266f7bbf05a8dde98",18,Symbol.BUSD, "BUSD"),
+        WETH:new Token(id,"0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab",18,Symbol.WETH, "WETH"),
+        WBTC:new Token(id,"0x50b7545627a5162f82a992c33b87adc75187b218",8,Symbol.WBTC, "WBTC"),
+    },
+
+
     swapRouters:[],
-    requestsPerSecond:5
+    requestsPerSecond:5,
 
 }
 
