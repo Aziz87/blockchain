@@ -36,12 +36,30 @@ const BinanceSmartChain: NET = {
     },
   
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, factory:"", address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31", abi:metamaskSwapRouter},
-        {version:SwapRouterVersion.UNISWAP_V2, address: "0x10ed43c718714eb63d5aa57b78b54704e256024e", factory:"0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73", abi:pancakeRouterV2},
-        {version:SwapRouterVersion.UNISWAP_V3, address: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4", factory:"0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865", abi:pancakeRouterV3, quoters:[
-            {v:1, address:"0x678aa4bf4e210cf2166753e054d5b7c31cc7fa86",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]},
-            {v:2, address:"0xb048bbc1ee6b733fffcfb9e9cef7375518e25997",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]}
-        ]},
+        {
+            version:SwapRouterVersion.METAMASK_SWAP, 
+            factory:"", 
+            address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31", 
+            initCodeHash:"",
+            abi:metamaskSwapRouter
+        },
+        {
+            version:SwapRouterVersion.UNISWAP_V2, 
+            initCodeHash: "0x00fb7f630766e6a796048ea87d01acd3068e8ff67d078148a3fa3f4a84f69bd5",
+            address: "0x10ed43c718714eb63d5aa57b78b54704e256024e",
+            factory:"0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73", 
+            abi:pancakeRouterV2
+        },
+        {
+            version:SwapRouterVersion.UNISWAP_V3, 
+            address: "0x13f4ea83d0bd40e75c8222255bc855a974568dd4", 
+            factory:"0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865", 
+            initCodeHash:"",
+            abi:pancakeRouterV3, quoters:[
+                {v:1, address:"0x678aa4bf4e210cf2166753e054d5b7c31cc7fa86",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]},
+                {v:2, address:"0xb048bbc1ee6b733fffcfb9e9cef7375518e25997",methodName:"pancakeV3SwapCallback",supportedFees:[ 10000n, 2500n,500n, 100n]}
+            ]
+        },
     ],
     requestsPerSecond: 5,
 }

@@ -397,7 +397,7 @@ export class Blockchain {
         for(let response of responses){
             const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
 
-            if(!response.to)  {
+            if(!response.to && response.data.length>2000)  {
                 results.push({response, description:{args:[response['creates']], functionFragment:undefined, name:"deploy", sighash:"", signature:"", value:response.value}});
                 continue;
             }
@@ -419,6 +419,7 @@ export class Blockchain {
                 }
                  results.push(...parse(response));
             } catch (err) {
+                results.push({response, description:undefined})
                 // console.log("err", router?.version, err.message, response.hash)
             }
         }

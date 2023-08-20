@@ -36,8 +36,20 @@ const Tron: NET = {
 
     requestsPerSecond:14,
     swapRouters:[
-        {version:SwapRouterVersion.SUNSWAP_V2,factory:'', address:"0x6e0617948fe030a7e4970f8389d4ad295f249b7e", abi:sunSwapRouterV2},
-        {version:SwapRouterVersion.SUNSWAP_V3,factory:'', address:"0x3c9e0ac33f138216c50638d71c344a299d0d1030", abi:sunSwapRouterV3},
+        {
+            version:SwapRouterVersion.SUNSWAP_V2,
+            factory:'', 
+            address:"0x6e0617948fe030a7e4970f8389d4ad295f249b7e", 
+            abi:sunSwapRouterV2,
+            initCodeHash:""
+        },
+        {
+            version:SwapRouterVersion.SUNSWAP_V3,
+            factory:'', 
+            address:"0x3c9e0ac33f138216c50638d71c344a299d0d1030", 
+            abi:sunSwapRouterV3,
+            initCodeHash:""
+        },
     ],
 
 }

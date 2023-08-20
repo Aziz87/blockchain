@@ -84,6 +84,7 @@ export interface Quoter{
 export interface SwapRouter {
     version:SwapRouterVersion;
     address:Lowercase<string>,
+    initCodeHash:string,
     factory:string,
     quoters?:Quoter[],
     abi:any

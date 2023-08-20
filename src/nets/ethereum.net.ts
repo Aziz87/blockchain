@@ -37,14 +37,37 @@ const Ethereum: NET = {
    
 
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, factory:"", address: "0x881d40237659c251811cec9c364ef91dc08d300c", abi:metamaskSwapRouter},
-        {version:SwapRouterVersion.UNISWAP_V2, factory:"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:uniswapRouterV2},
-        {version:SwapRouterVersion.UNISWAP_V3, factory:"0x1F98431c8aD98523631AE4a59f267346ea31F984",address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:uniswapRouterV3, quoters:[
+        {
+            version:SwapRouterVersion.METAMASK_SWAP, 
+            factory:"", 
+            initCodeHash:"",
+            address: "0x881d40237659c251811cec9c364ef91dc08d300c", 
+            abi:metamaskSwapRouter
+        },
+        {
+            version:SwapRouterVersion.UNISWAP_V2, 
+            factory:"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", 
+            address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", 
+            initCodeHash:"0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f",
+            abi:uniswapRouterV2
+        },
+        {
+            version:SwapRouterVersion.UNISWAP_V3, 
+            factory:"0x1F98431c8aD98523631AE4a59f267346ea31F984",
+            address: "0xe592427a0aece92de3edee1f18e0157c05861564", 
+            initCodeHash:"",
+            abi:uniswapRouterV3, quoters:[
                 {v:1,address:"0xb27308f9f90d607463bb33ea1bebb41c27ce5ab6",methodName:"uniswapV3SwapCallback",supportedFees:[   10000n, 3000n,500n, 100n]},
                 {v:2,address:"0x61ffe014ba17989e743c5f6cb21bf9697530b21e",methodName:"uniswapV3SwapCallback",supportedFees:[   10000n, 3000n,500n, 100n]}
             ],
         },
-        {version:SwapRouterVersion.UNIVERSAL_ROUTER, factory:"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", abi:universalRouter},
+        {
+            version:SwapRouterVersion.UNIVERSAL_ROUTER, 
+            factory:"0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", 
+            address: "0x7a250d5630b4cf539739df2c5dacb4c659f2488d", 
+            initCodeHash:"",
+            abi:universalRouter
+        },
 
     ],
     requestsPerSecond:5,

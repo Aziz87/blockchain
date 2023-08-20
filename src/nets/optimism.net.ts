@@ -38,8 +38,20 @@ const Optimism: NET = {
      
     requestsPerSecond:5,
     swapRouters:[
-        {version:SwapRouterVersion.UNISWAP_V2, factory:"0xf1046053aa5682b4f9a81b5481394da16be5ff5a", address: "0xa062ae8a9c5e11aaa026fc2670b0d65ccc8b2858", abi:uniswapRouterV2},
-        {version:SwapRouterVersion.UNISWAP_V3, factory:"0x1f98431c8ad98523631ae4a59f267346ea31f984", address: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45", abi:uniswapRouterV3},
+        {
+            version:SwapRouterVersion.UNISWAP_V2, 
+            factory:"0xf1046053aa5682b4f9a81b5481394da16be5ff5a", 
+            address: "0xa062ae8a9c5e11aaa026fc2670b0d65ccc8b2858", 
+            abi:uniswapRouterV2,
+            initCodeHash:""
+        },
+        {
+            version:SwapRouterVersion.UNISWAP_V3, 
+            factory:"0x1f98431c8ad98523631ae4a59f267346ea31f984", 
+            address: "0x68b3465833fb72a70ecdf485e0e4c7bd8665fc45", 
+            abi:uniswapRouterV3,
+            initCodeHash:""
+        },
     ],
 }
 

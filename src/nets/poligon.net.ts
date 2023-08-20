@@ -38,10 +38,23 @@ const Poligon: NET = {
 
     requestsPerSecond:5,
     swapRouters:[
-        {version:SwapRouterVersion.METAMASK_SWAP, factory:'', address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31", abi:uniswapRouterV2},
-        {version:SwapRouterVersion.UNISWAP_V3, factory:'', address: "0xe592427a0aece92de3edee1f18e0157c05861564", abi:uniswapRouterV3, quoters:[
-            {v:2, address:"0xe592427a0aece92de3edee1f18e0157c05861564",methodName:"uniswapV3SwapCallback",supportedFees:[10000n, 3000n, 500n, 100n]}
-        ]},
+        {
+            version:SwapRouterVersion.METAMASK_SWAP, 
+            factory:'', 
+            address: "0x1a1ec25dc08e98e5e93f1104b5e5cdd298707d31", 
+            initCodeHash:"",
+            abi:uniswapRouterV2
+        },
+        {
+            version:SwapRouterVersion.UNISWAP_V3, 
+            factory:'', 
+            address: "0xe592427a0aece92de3edee1f18e0157c05861564", 
+            abi:uniswapRouterV3,
+            initCodeHash:"",
+            quoters:[
+                {v:2, address:"0xe592427a0aece92de3edee1f18e0157c05861564",methodName:"uniswapV3SwapCallback",supportedFees:[10000n, 3000n, 500n, 100n]}
+            ]
+        },
     ],
 }
 
