@@ -414,6 +414,26 @@ export class Blockchain {
                     ? {args:[], functionFragment:undefined, name:"sendETH", signature:"send(address, uint256)", sighash:"0x", value:response.value } as TransactionDescription
                     : {...face?.parseTransaction(response), functionFragment:undefined}
                     
+                    if (description && router?.version === SwapRouterVersion.METAMASK_SWAP && description.name === "swap") {
+                    
+                        const amountOut = BigNumber.from("0x"+description.args.data.substring(216,258));
+                        let tokenOut = "0x"+description.args.data.substring(90,130).toLowerCase();
+                        const amountIn = description.args.amount;
+                        const tokenIn = description.args.tokenFrom;
+                        if(tokenOut.substring(0,20)==="0x000000000000000000") tokenOut = constants.AddressZero;
+                        let path=[description.args.tokenFrom.toLowerCase(),tokenOut]
+                        // const method = description.args.tokenFrom===constants.AddressZero ? "swapExactETHForTokens" :tokenOut===constants.AddressZero ? "swapExactTokensForETH" : "swapExactTokensForTokens";
+
+                        const args:any = [];
+                        args.amountIn=amountIn;
+                        args.amountOut=amountOut;
+                        args.tokenIn=tokenIn;
+                        args.tokenOut=tokenOut;
+                        args.path=path;
+                        // args.method=method;
+                        description = {...description, args}
+                    }
+
                     if (description && router?.version === SwapRouterVersion.UNISWAP_V3 && description.name === "multicall") {
 
 
@@ -458,7 +478,7 @@ export class Blockchain {
                  results.push(...parse(response));
             } catch (err) {
                 results.push({response, description:undefined})
-                // console.log("err", router?.version, err.message, response.hash)
+                console.log("err", router?.version, err.message, response.hash)
             }
         }
         return results;
