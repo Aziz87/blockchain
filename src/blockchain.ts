@@ -58,6 +58,11 @@ export {
     crypto, valid, net, lib
 }
 
+export interface Descriped {
+    response:TransactionResponse;
+    description:TransactionDescription
+}
+
 export interface SendTokenDto {
     netId: number,
     fromPrivateKey: string,
@@ -392,7 +397,7 @@ export class Blockchain {
     /**
      * Парсим транзакции 
      */
-    public descript(net: NET, responses: ethers.providers.TransactionResponse[]):{response:TransactionResponse, description:TransactionDescription}[] {
+    public descript(net: NET, responses: ethers.providers.TransactionResponse[]):Descriped[] {
         const results = [];
         for(let response of responses){
             const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
@@ -403,17 +408,45 @@ export class Blockchain {
             }
             
             try {
-                const face = response.data==="0x"
-                ? undefined :
-                    router 
-                        ? new ethers.Contract(response.to, router.abi).interface
-                        : new ethers.Contract(response.to, erc20).interface;
-                function parse(response:TransactionResponse): any[] {
-                    const description = response?.data==="0x"
-                    ? {args:[], functionFragment:"0x", name:"sendETH", signature:"send(address, uint256)", sighash:"0x", value:response.value }
-                    : face?.parseTransaction(response)
+                const face = response.data==="0x" ? undefined : router ? new ethers.Contract(response.to, router.abi).interface : new ethers.Contract(response.to, erc20).interface;
+                function parse(response:TransactionResponse): Descriped[] {
+                    let description = response?.data==="0x"
+                    ? {args:[], functionFragment:undefined, name:"sendETH", signature:"send(address, uint256)", sighash:"0x", value:response.value } as TransactionDescription
+                    : {...face?.parseTransaction(response), functionFragment:undefined}
+                    
                     if (description && router?.version === SwapRouterVersion.UNISWAP_V3 && description.name === "multicall") {
-                        return description.args['data'].map((data: string) => parse({ ...response, data })).reduce((a, b) => [...a, ...b], []);
+
+
+                        const [sub0] = parse({ ...response, data:description.args['data'][0] });
+                        const [sub1] = parse({ ...response, data:description.args['data'][description.args['data'].length-1] });
+
+              
+                      
+                         const args:any = [];
+                        // IN
+                        if(Number(sub0.description.args.amountIn))  args.amountIn=sub0.description.args.amountIn;
+                        else if(Number(sub0.description.args.amountInMax))  args.amountInMax=sub0.description.args.amountInMax;
+                        else if(Number(sub0.description.args.params?.amountIn))  args.amountIn=sub0.description.args.params.amountIn;
+                        else if(Number(sub0.description.args.params?.amountInMax))  args.amountInMax=sub0.description.args.params.amountInMax;
+
+                        // OUT
+                        if(Number(sub1.description.args.amountOut))  args.amountOut=sub1.description.args.amountOut;
+                        else if(Number(sub1.description.args.amountOutMin))  args.amountOutMin=sub1.description.args.amountOutMin;
+                        else if(Number(sub1.description.args.params.amountOut))  args.amountOut=sub1.description.args.params.amountOut;
+                        else if(Number(sub1.description.args.params.amountOutMin))  args.amountOutMin=sub1.description.args.params.amountOutMin;
+                       
+                        const path0 = sub0.description.args.path || sub0.description.args.params?.path
+                        const path1 = sub1.description.args.path || sub1.description.args.params?.path
+
+                        args.path = [path0.length>10?path0.substr(0,42):path0[0], path1.length>10 ? "0x"+path1.substring(path1.length-40) : path1[path1.length-1]]
+                        if(!args.amountIn && !args.amountInMax) args.amountIn = description.value
+
+                        args[0]=(args.amountIn || args.amountInMax)
+                        args[1]=(args.amountOut || args.amountOutMin)
+                        args[2]=(args.path)
+
+                        description={...sub1.description, args, value:description.value}
+                        // console.log("--")
                     }
                     return [{ response, description }]
                 }
@@ -456,21 +489,14 @@ export class Blockchain {
             for (let i=0;i<balances.length;i++) {
                 const balance = balances[i];
                 if(!balance.token) balance.token = new Token(net.id,ethers.constants.AddressZero,net.decimals,net.symbol,net.name);
-
-                if(balance.token.address===ethers.constants.AddressZero) {
-                    items.push({ target: net.multicall, method: "getEthBalance", arguments: [balance.user], face: faceMulticall,key:"i"+i })
-                }
+                if(balance.token.address===ethers.constants.AddressZero) items.push({ target: net.multicall, method: "getEthBalance", arguments: [balance.user], face: faceMulticall,key:"i"+i })
                 else items.push({ target: balance.token.address, method: "balanceOf", arguments: [balance.user], face: faceERC,key:"i"+i  })
             }
 
             const response = await this.getLimitter(net.id).schedule(()=>multiCall(net, items));
-
             const result: number[] = [];
-
-            for (let i=0;i<balances.length;i++) {
-                result.push(Number(formatUnits(response["i"+i][0], balances[i].token.decimals)));
-            }
-
+            for (let i=0;i<balances.length;i++) result.push(Number(formatUnits(response["i"+i][0], balances[i].token.decimals)));
+            
             return result;
         } catch (err) {
             console.error(err, "balance checker")
