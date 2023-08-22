@@ -441,10 +441,15 @@ export class Blockchain {
                         args.path = [path0.length>10?path0.substr(0,42):path0[0], path1.length>10 ? "0x"+path1.substring(path1.length-40) : path1[path1.length-1]]
                         if(!args.amountIn && !args.amountInMax) args.amountIn = description.value
 
+
+
+                        args.to=sub1.description.args.to || sub0.description.args.to || sub1.description.args.params?.to || sub0.description.args.params?.to || description.args.to;
                         args[0]=(args.amountIn || args.amountInMax)
                         args[1]=(args.amountOut || args.amountOutMin)
                         args[2]=(args.path)
+                        args[3]=(args.to)
 
+                       
                         description={...sub1.description, args, value:description.value}
                         // console.log("--")
                     }
