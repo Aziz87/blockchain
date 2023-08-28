@@ -54,7 +54,7 @@ export default class BlockParser extends EventEmitter {
 
             }
         }catch(err){
-            console.log("err",err?.message)
+            console.log("error parsePending",err?.message)
         }
     }
 

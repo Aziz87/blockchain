@@ -1,5 +1,5 @@
 import { BigNumberish, ethers } from "ethers";
-import {Token as UniswapToken} from "@uniswap/sdk-core"
+import {Currency, Token as UniswapToken} from "@uniswap/sdk-core"
 
 export interface TornatoContract {
     instances: { amount: number, address: string }[];

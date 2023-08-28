@@ -32,6 +32,8 @@ import {Pair, Route, Router, Trade} from "custom-uniswap-v2-sdk"
 const WAValidator = require('multicoin-address-validator');
 const { Interface, formatEther, formatUnits, parseUnits} =ethers.utils;
 const {JsonRpcProvider} =ethers.providers;
+import {  Descriped, descriptor } from "./utils/formatter/descriptor"
+import uniswapPair from "./abi/uniswap-pair";
 
 
 
@@ -58,10 +60,6 @@ export {
     crypto, valid, net, lib
 }
 
-export interface Descriped {
-    response:TransactionResponse;
-    description:TransactionDescription
-}
 
 export interface SendTokenDto {
     netId: number,
@@ -77,6 +75,11 @@ export interface SendDto {
     privateKey: string,
     to: string,
     amount: number
+}
+
+export function toInt(bn: BigNumberish, decimals: number = 18): number {
+    if (Number(bn) < 0) throw new Error("ERROR TO INT")
+    return Number(ethers.utils.formatUnits(bn, decimals))
 }
 
 export const events = {
@@ -398,90 +401,7 @@ export class Blockchain {
      * Парсим транзакции 
      */
     public descript(net: NET, responses: ethers.providers.TransactionResponse[]):Descriped[] {
-        const results = [];
-        for(let response of responses){
-            const router = net.swapRouters.find(x => x.address === response?.to?.toLowerCase());
-
-            if(!response.to && response.data.length>2000)  {
-                results.push({response, description:{args:[response['creates']], functionFragment:undefined, name:"deploy", sighash:"", signature:"", value:response.value}});
-                continue;
-            }
-            
-            try {
-                const face = response.data==="0x" ? undefined : router ? new ethers.Contract(response.to, router.abi).interface : new ethers.Contract(response.to, erc20).interface;
-                function parse(response:TransactionResponse): Descriped[] {
-                    let description = response?.data==="0x"
-                    ? {args:[], functionFragment:undefined, name:"sendETH", signature:"send(address, uint256)", sighash:"0x", value:response.value } as TransactionDescription
-                    : {...face?.parseTransaction(response), functionFragment:undefined}
-                    
-                    if (description && router?.version === SwapRouterVersion.METAMASK_SWAP && description.name === "swap") {
-                    
-                        const amountOut = BigNumber.from("0x"+description.args.data.substring(216,258));
-                        let tokenOut = "0x"+description.args.data.substring(90,130).toLowerCase();
-                        const amountIn = description.args.amount;
-                        const tokenIn = description.args.tokenFrom;
-                        if(tokenOut.substring(0,20)==="0x000000000000000000") tokenOut = constants.AddressZero;
-                        let path=[description.args.tokenFrom.toLowerCase(),tokenOut]
-                        // const method = description.args.tokenFrom===constants.AddressZero ? "swapExactETHForTokens" :tokenOut===constants.AddressZero ? "swapExactTokensForETH" : "swapExactTokensForTokens";
-
-                        const args:any = [];
-                        args.amountIn=amountIn;
-                        args.amountOut=amountOut;
-                        args.tokenIn=tokenIn;
-                        args.tokenOut=tokenOut;
-                        args.path=path;
-                        // args.method=method;
-                        description = {...description, args}
-                    }
-
-                    if (description && router?.version === SwapRouterVersion.UNISWAP_V3 && description.name === "multicall") {
-
-
-                        const [sub0] = parse({ ...response, data:description.args['data'][0] });
-                        const [sub1] = parse({ ...response, data:description.args['data'][description.args['data'].length-1] });
-
-              
-                      
-                         const args:any = [];
-                        // IN
-                        if(Number(sub0.description.args.amountIn))  args.amountIn=sub0.description.args.amountIn;
-                        else if(Number(sub0.description.args.amountInMax))  args.amountInMax=sub0.description.args.amountInMax;
-                        else if(Number(sub0.description.args.params?.amountIn))  args.amountIn=sub0.description.args.params.amountIn;
-                        else if(Number(sub0.description.args.params?.amountInMax))  args.amountInMax=sub0.description.args.params.amountInMax;
-
-                        // OUT
-                        if(Number(sub1.description.args.amountOut))  args.amountOut=sub1.description.args.amountOut;
-                        else if(Number(sub1.description.args.amountOutMin))  args.amountOutMin=sub1.description.args.amountOutMin;
-                        else if(Number(sub1.description.args.params.amountOut))  args.amountOut=sub1.description.args.params.amountOut;
-                        else if(Number(sub1.description.args.params.amountOutMin))  args.amountOutMin=sub1.description.args.params.amountOutMin;
-                       
-                        const path0 = sub0.description.args.path || sub0.description.args.params?.path
-                        const path1 = sub1.description.args.path || sub1.description.args.params?.path
-
-                        args.path = [path0.length>10?path0.substr(0,42):path0[0], path1.length>10 ? "0x"+path1.substring(path1.length-40) : path1[path1.length-1]]
-                        if(!args.amountIn && !args.amountInMax) args.amountIn = description.value
-
-
-
-                        args.to=sub1.description.args.to || sub0.description.args.to || sub1.description.args.params?.to || sub0.description.args.params?.to || description.args.to;
-                        args[0]=(args.amountIn || args.amountInMax)
-                        args[1]=(args.amountOut || args.amountOutMin)
-                        args[2]=(args.path)
-                        args[3]=(args.to)
-
-                       
-                        description={...sub1.description, args, value:description.value}
-                        // console.log("--")
-                    }
-                    return [{ response, description }]
-                }
-                 results.push(...parse(response));
-            } catch (err) {
-                results.push({response, description:undefined})
-                console.log("err", router?.version, err.message, response.hash)
-            }
-        }
-        return results;
+        return descriptor(net,responses)
     }
   
     
@@ -704,6 +624,10 @@ export class Blockchain {
 
 
 
+    
+    
+
+    
     public async swapExactTokensForETH(net:NET|number, privateKey:string, amountIn:BigNumber, amountOutMin:BigNumber, path:string[],to?:string,deadline?:number, router:SwapRouterVersion=SwapRouterVersion.UNISWAP_V2):Promise<TransactionResponse | TronTransaction>{
             const contract = this.getSwapRouterContract(net, privateKey,router);
             if (!deadline) deadline=new Date().getTime();
@@ -742,6 +666,8 @@ export class Blockchain {
         }
     }
 
+
+ 
 
 
 
@@ -808,6 +734,7 @@ export class Blockchain {
 
         const USDT =  net.tokens.USDT;
         const BUSD = net.tokens.BUSD || net.tokens.USDT
+        const ETH = net.wrapedNativToken;
         // const pathVariants = tokens.map((token,i)=>({
         //     path:[
         //         [token.address, USDT.address],
@@ -816,47 +743,73 @@ export class Blockchain {
         //     key:i
         // }))
 
-        const target = net.swapRouters.find(x=>x.version===SwapRouterVersion.UNISWAP_V2).address;
-        const face = new Interface(pancakeRouterV2)
+        const face = new Interface(uniswapPair)
 
-        const method = "getAmountsOut";
+        const method = "getReserves";
         const multipler =1;
 
-        const items: any[] = tokens.map((token, i) => {
+        const uniswapV2 = net.swapRouters.find(x => x.version === SwapRouterVersion.UNISWAP_V2)
+
+
+        const tokensPools: {
+            token:Token,
+            pools: {
+                reserves:number[],
+                address:string,
+                tokens:Token[],
+                type:"USD"|"ETH"|"ETHUSDT"
+            }[]
+        }[] = [];
+
+        for(let token of tokens){
             if(token.address===ethers.constants.AddressZero)token=net.wrapedNativToken;
-            return[
-            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, token.address]], face },
-            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, token.address]], face },
-            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, BUSD.address, net.wrapedNativToken.address, token.address]], face },
-            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, net.wrapedNativToken.address, BUSD.address, token.address]], face },
-            { index: i, target, token, method, arguments: [ethers.utils.parseUnits(multipler+"",USDT.decimals),[ USDT.address, BUSD.address,  token.address]], face },
-        ]}).reduce((a,b)=>[...a,...b],[]);
-
-
-        const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
-
-        const data = result[method]? result[method][target]:[];
-        const results= tokens.map(x=>0)
-
-    
-        for(let i =0; i<data.length;i++){
-            if(data[i]){
-                const item = items[i]
-                if(item?.token){
-                    const amounts = data[i]
-                    const result =multipler/ Number(ethers.utils.formatUnits(amounts[amounts.length-1], item.token.decimals))
-                    if(item.token.address===USDT.address) results[item.index]=1;
-                    else {
-                        if(results[item.index])continue;//results[item.index]=Math.min(result,results[item.index])
-                        else results[item.index]= result;
-                    }
-                    // console.log( item.token.symbol, result,data[i], item.arguments[1] )
+            const pools = [];
+                if(USDT.address!==token.address) pools.push({address:lib.pair.getAddress(token, USDT,uniswapV2.factory,uniswapV2.initCodeHash), tokens:[token, USDT],type:"USD"})
+                if(BUSD.address!==token.address) pools.push({address:lib.pair.getAddress(token, BUSD,uniswapV2.factory,uniswapV2.initCodeHash), tokens:[token, BUSD],type:"USD"})
+                if(ETH.address!==token.address) {
+                    pools.push({address:lib.pair.getAddress(token, ETH,uniswapV2.factory,uniswapV2.initCodeHash),tokens:[token, ETH], type:"ETH"})
+                    pools.push({address:lib.pair.getAddress(ETH, USDT, uniswapV2.factory,uniswapV2.initCodeHash),tokens:[ETH, USDT], type:"ETHUSDT"})
                 }
-            }//else console.log("NO PATH",items[i].arguments[1])
+            tokensPools.push({token, pools})
         }
 
-        return results;
-    
+
+        const items: any[] = tokensPools.map(tp=>tp.pools.map(pool=>({target:pool.address, method, arguments:[], face}))).reduce((a,b)=>[...a,...b],[]);
+        const result = await this.getLimitter(net.id).schedule(()=> multiCall(net as NET, items));
+
+        for(let tp of tokensPools){
+            for(let pool of tp.pools){
+                const [r0,r1]= result[method][pool.address];
+                pool.reserves =  pool.tokens[0].sortsBefore(pool.tokens[1]) ? [r0,r1] : [r1,r0];
+            }
+        }
+
+
+        const prices:number[] = [];
+        for(let tp of tokensPools){
+            const pools = tp.pools.sort((a,b)=>a.reserves[0]>b.reserves[0]?-1:1);
+            let price = 0;
+            while(pools.length){
+                const pool = pools.splice(0,1)[0];
+                if(pool.reserves?.length){
+                    if(pool.type==="USD") {
+                        price = toInt(pool.reserves[1],pool.tokens[1].decimals)/toInt(pool.reserves[0],pool.tokens[0].decimals);
+                        break;
+                    }
+                    if(pool.type==="ETH") {
+                        const ETHUSDT = tp.pools.find(x=>x.type==="ETHUSDT");
+                        if(ETHUSDT){
+                            const priceOfETH =toInt(ETHUSDT.reserves[1],ETHUSDT.tokens[1].decimals)/toInt(ETHUSDT.reserves[0],ETHUSDT.tokens[0].decimals)
+                            price = toInt(pool.reserves[1],pool.tokens[1].decimals)/toInt(pool.reserves[0],pool.tokens[0].decimals)* priceOfETH;
+                            break;
+                        }
+                    }
+                }
+            }
+            prices.push(price);
+     
+        }
+        return prices;
     }
 
 
