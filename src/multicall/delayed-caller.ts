@@ -3,6 +3,8 @@ import { multiCallLinear } from "./multicall";
 import { faces } from "../utils/formatter/faces";
 import { SwapRouterVersion } from "../nets/net.i";
 
+
+
 export interface DelayedCall {
     target:string;
     method:string;
@@ -10,6 +12,7 @@ export interface DelayedCall {
     face:ethers.utils.Interface
     maxDelay:number;
     cb:Function;
+    result?:any
 }
 
 export interface CustomFace{
@@ -20,18 +23,18 @@ export interface CustomTarget{
     address:any
 }
 
-const MAX_PART_CALL_SIZE = 200;
+const MAX_PART_CALL_SIZE = 100;
 
 export class DelayedCaller{
 
+
     private bc:Blockchain;
     private net:NET;
-
     private list:DelayedCall[] = [];
-
     private targets:any = {
-
     };
+    private debug:boolean = false;
+
 
     constructor(bc:Blockchain, net:NET){
         this.bc = bc;
@@ -43,8 +46,12 @@ export class DelayedCaller{
             metamaskSwapRouter:net.swapRouters.find(x=>x.version===SwapRouterVersion.METAMASK_SWAP).address,
             uniswapFactoryV2:uniswapV2.factory
         }
-        setInterval(this.processor.bind(this), 500);
-        
+        setInterval(this.processor.bind(this), 200);
+    }
+
+
+    public setDebug(status:boolean){
+        this.debug = status;
     }
 
     public call<T>(
@@ -56,22 +63,32 @@ export class DelayedCaller{
         const target = _target['address'] || this.targets[_target+'']
 
     
-        return new Promise(resolve=>{
+        return new Promise(resolve => {
             function cb(result:T){
                 resolve(result)
             }
-            this.list.push({target, method, args, face, maxDelay ,cb});
+            this.list.push({target, method, args, face, maxDelay, cb});
         })
     }
 
+    public get waits(){
+        return this.list.length;
+    }
+
+    
     private processor(){
+        if(!this.list.length)return;
         this.list.sort((a,b)=>a.maxDelay<b.maxDelay?-1:1);
-        const part = this.list.splice(0,MAX_PART_CALL_SIZE);
+        const part = this.list.splice(0, MAX_PART_CALL_SIZE);
         if(part.length){
-            this.bc.getLimitter(this.net).schedule(()=>multiCallLinear(this.net, part.map(item=>({target:item.target, arguments:item.args, face:item.face, method:item.method }))).then(results=>{
+            if(this.debug) console.log('- delayed call: ',part.length)
+            this.bc.getLimitter(this.net).schedule(()=> multiCallLinear(this.net, part.map(item=>({target:item.target, arguments:item.args, face:item.face, method:item.method }))).then(results=>{
+                if(this.debug) console.log('- delayed results: ',results.length)
                 for(let i = 0; i<results.length; i++){
-                    part[i].cb(results[i])
+                    part[i].result = results[i];
+                    part[i].cb(results[i]);
                 }
+                if(this.debug) console.log("- delayed waits: "+this.waits)
             }));
         }
 

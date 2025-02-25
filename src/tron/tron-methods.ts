@@ -1,14 +1,14 @@
 import axios from "axios";
-import * as TronWeb from "tronweb";
-import {BigNumber, Contract, utils} from "ethers"
+import { TronWeb } from "tronweb";
+import { BigNumber, Contract, utils } from "ethers"
 import { NET } from "../nets/net.i";
+import bn from "bignumber.js";
 import { BlockInfo } from "./interfaces";
 import { TronTransactionInfo, TronHistoryElement, TronTransaction } from "./tron-methods-d"
 import erc20 from "../abi/erc20";
 import TronNile from "../nets/tron-nileex.net";
-import { MultiCallItem } from "../multicall/multicall.i";
-import MulticallAbi from "../multicall/multicall-abi";
 import { Token } from "../blockchain";
+import { GetTransactionResponse, TransactionInfo } from "tronweb/lib/esm/types";
 
 
 export function toHex(str) {
@@ -19,7 +19,7 @@ export function fromHex(str) {
 }
 
 export class TronMethods {
-    private tronWeb:TronWeb;
+    private tronWeb: TronWeb;
     private net: NET;
     constructor(net: NET) {
         this.net = net;
@@ -32,7 +32,7 @@ export class TronMethods {
 
 
     public getProvider(privateKey) {
-        this.tronWeb.privateKey=privateKey;
+        this.tronWeb.defaultPrivateKey = privateKey;
         return this.tronWeb;
     }
 
@@ -47,13 +47,13 @@ export class TronMethods {
         const gasPrice = await this.getGasPrice();
         const gasLimit = 30000;
         const fee = (gasPrice * gasLimit) / 1e6;
-        const from = tronWeb.address.fromPrivateKey(privateKeyFrom);
+        const from = tronWeb.address.fromPrivateKey(privateKeyFrom) || '';
 
         // console.log("FEE " + fee + ", amount " + amount + " gasPrice " + gasPrice + ", gasLimit " + gasLimit, "TRX")
         // console.log({ to, amount: tronWeb.toSun(amount), from, privateKeyFrom });
         const tradeobj = await tronWeb.transactionBuilder.sendTrx(
             to,
-            tronWeb.toSun(amount),
+            Number(tronWeb.toSun(amount)),
             from
         );
         const signedtxn = await tronWeb.trx.sign(tradeobj, privateKeyFrom);
@@ -77,13 +77,13 @@ export class TronMethods {
     ): Promise<{ hash: string; amount: number }> {
 
 
-        const tronWeb =  new TronWeb({
+        const tronWeb = new TronWeb({
             fullHost: this.net.rpc.url,
             solidityNode: this.net.rpc.url,
             headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
             privateKey
         });
-        
+
         // console.log("amount " + amount + " gasPrice " + gasPrice + ", gasLimit " + gasLimit, "TRX")
         try {
             const { transfer } = await tronWeb.contract().at(tokenAddress);
@@ -166,7 +166,7 @@ export class TronMethods {
 
 
 
-    async getTransactionById(hash: string): Promise<TronTransaction> {
+    async getTransactionById(hash: string): Promise<GetTransactionResponse> {
         try {
             return await this.tronWeb.trx.getTransaction(hash)
         } catch (err) {
@@ -177,7 +177,7 @@ export class TronMethods {
 
 
 
-    async getTransactionInfoById(hash: string): Promise<TronTransactionInfo> {
+    async getTransactionInfoById(hash: string): Promise<TransactionInfo> {
         try {
             return await this.tronWeb.trx.getTransactionInfo(hash)
         } catch (err) {
@@ -187,7 +187,7 @@ export class TronMethods {
     }
 
     public static getAddressFromPrivateKey(privateKey: string): string {
-        return TronWeb.address.fromPrivateKey(privateKey);
+        return TronWeb.address.fromPrivateKey(privateKey) + '';
     }
 
     public async getBalances(
@@ -196,35 +196,33 @@ export class TronMethods {
 
     ): Promise<number[]> {
         let checker = "TYPACdASdAe4ZjcACwHscmqy6KCssP2jDt"
-        if(this.net.id===TronNile.id) checker = "TRPKCrLsHrSXfAo8zAUa8fBRMm8pz43MRs"
-        const contract = await this.tronWeb.contract(
-            [
-                {
-                    outputs: [{ type: "uint256" }],
-                    constant: true,
-                    inputs: [
-                        { name: "user", type: "address" },
-                        { name: "token", type: "address" },
-                    ],
-                    name: "tokenBalance",
-                    stateMutability: "View",
-                    type: "Function",
-                },
-                {
-                    outputs: [{ type: "uint256[]" }],
-                    constant: true,
-                    inputs: [
-                        { name: "users", type: "address[]" },
-                        { name: "tokens", type: "address[]" },
-                    ],
-                    name: "balances",
-                    stateMutability: "View",
-                    type: "Function",
-                },
-                { payable: true, stateMutability: "Payable", type: "Fallback" },
-            ],
-            checker
-        );
+        if (this.net.id === TronNile.id) checker = "TRPKCrLsHrSXfAo8zAUa8fBRMm8pz43MRs"
+        const abi = [
+            {
+                outputs: [{ type: "uint256" }],
+                constant: true,
+                inputs: [
+                    { name: "user", type: "address" },
+                    { name: "token", type: "address" },
+                ],
+                name: "tokenBalance",
+                stateMutability: "View",
+                type: "Function",
+            },
+            {
+                outputs: [{ type: "uint256[]" }],
+                constant: true,
+                inputs: [
+                    { name: "users", type: "address[]" },
+                    { name: "tokens", type: "address[]" },
+                ],
+                name: "balances",
+                stateMutability: "View",
+                type: "Function",
+            },
+            { payable: true, stateMutability: "Payable", type: "Fallback" },
+        ];
+        const contract = this.tronWeb.contract(abi, checker);
         this.tronWeb.setAddress(checker);
         const result: number[] = await contract.methods.balances(accounts, tokens).call()
         return result;
@@ -233,10 +231,10 @@ export class TronMethods {
 
 
     public async getTokensInfo(
-         tokens: string[]
+        tokens: string[]
     ): Promise<Token[]> {
         const contractAddress = "TQKaNLbzBn4W769A3YJjYT3RMfHKVFLG8s";
-        const abi = [{"outputs":[{"type":"uint256[]"}],"inputs":[{"name":"tokens","type":"address[]"},{"name":"contracts","type":"address[]"},{"name":"account","type":"address"}],"name":"getTokenAllowance","stateMutability":"view","type":"function"},{"outputs":[{"type":"uint8[]"}],"inputs":[{"name":"tokens","type":"address[]"}],"name":"getTokenDecimals","stateMutability":"view","type":"function"},{"outputs":[{"type":"string[]"}],"inputs":[{"name":"tokens","type":"address[]"}],"name":"getTokenSymbols","stateMutability":"view","type":"function"},{"outputs":[{"type":"bool"}],"inputs":[{"name":"token","type":"address"}],"name":"isContract","stateMutability":"view","type":"function"},{"stateMutability":"Payable","type":"Receive"}];
+        const abi = [{ "outputs": [{ "type": "uint256[]" }], "inputs": [{ "name": "tokens", "type": "address[]" }, { "name": "contracts", "type": "address[]" }, { "name": "account", "type": "address" }], "name": "getTokenAllowance", "stateMutability": "view", "type": "function" }, { "outputs": [{ "type": "uint8[]" }], "inputs": [{ "name": "tokens", "type": "address[]" }], "name": "getTokenDecimals", "stateMutability": "view", "type": "function" }, { "outputs": [{ "type": "string[]" }], "inputs": [{ "name": "tokens", "type": "address[]" }], "name": "getTokenSymbols", "stateMutability": "view", "type": "function" }, { "outputs": [{ "type": "bool" }], "inputs": [{ "name": "token", "type": "address" }], "name": "isContract", "stateMutability": "view", "type": "function" }, { "stateMutability": "Payable", "type": "Receive" }];
         const contract = await this.tronWeb.contract(
             abi,
             contractAddress
@@ -246,12 +244,12 @@ export class TronMethods {
         const decimals = await contract.methods.getTokenDecimals(tokens).call();
         const symbols = await contract.methods.getTokenSymbols(tokens).call();
 
-        return tokens.map((address,i)=>new Token(this.net.id, fromHex(address),decimals[i], symbols[i],symbols[i] ));
+        return tokens.map((address, i) => new Token(this.net.id, fromHex(address), decimals[i], symbols[i], symbols[i]));
     }
 
 
     private static abiCache: any[] = [];
-    public async  getContractAbi(contractAddress) {
+    public async getContractAbi(contractAddress) {
         try {
             if (TronMethods.abiCache[contractAddress]) return TronMethods.abiCache[contractAddress];
             const contract = await this.tronWeb.trx.getContract(contractAddress);
@@ -264,7 +262,7 @@ export class TronMethods {
     }
 
 
-    public async allowance(tokenAddress:string, ownerAddress: string, spenderAddress: string ): Promise<any> {
+    public async allowance(tokenAddress: string, ownerAddress: string, spenderAddress: string): Promise<any> {
         const contract = await this.tronWeb.contract(
             erc20,
             tokenAddress
@@ -275,19 +273,19 @@ export class TronMethods {
 
 
 
-    public async approve( privateKey: string, tokenAddress:string, spenderAddress: string, amount:BigNumber ): Promise<any> {
-        const tronWeb =  new TronWeb({
+    public async approve(privateKey: string, tokenAddress: string, spenderAddress: string, amount: BigNumber): Promise<any> {
+        const tronWeb = new TronWeb({
             fullHost: this.net.rpc.url,
             solidityNode: this.net.rpc.url,
             headers: { "TRON-PRO-API-KEY": this.net.rpc.apiKey },
             privateKey
         });
-            const contract = await tronWeb.contract().at(tokenAddress);
-            await contract.approve(spenderAddress , amount).send().then( (hash)=> {
-                console.log('user Approved',hash)
-            }).catch(err => {
-                console.log('user cancle Approved')
-            })
+        const contract = await tronWeb.contract().at(tokenAddress);
+        await contract.approve(spenderAddress, amount).send().then((hash) => {
+            console.log('user Approved', hash)
+        }).catch(err => {
+            console.log('user cancle Approved')
+        })
 
     }
 

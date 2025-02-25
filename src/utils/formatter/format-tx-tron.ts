@@ -1,10 +1,10 @@
 import { utils } from "ethers"
-import * as TronWeb from "tronweb";
+import { TronWeb } from "tronweb";
 import { BlockTransaction } from "../../tron/interfaces";
-const {AbiCoder, Interface} = utils;
+const { AbiCoder, Interface } = utils;
 import { TX } from "./TX";
 
-import {Method, methodsNames} from "./method.enum"
+import { Method, methodsNames } from "./method.enum"
 import { MethodCode } from "./method-code.enum";
 
 export function fromHex(hexAddress: string): string {
@@ -12,14 +12,14 @@ export function fromHex(hexAddress: string): string {
 }
 
 
- 
 
 
 
 
 
 
- 
+
+
 // export function parseDataAddresses(net:NET, transaction:BlockTransaction | TransactionResponse){
 
 //     if(net.symbol===Symbol.TRX){
@@ -32,9 +32,9 @@ export function fromHex(hexAddress: string): string {
 
 
 
-export function formatTron(transaction:BlockTransaction):TX{
+export function formatTron(transaction: BlockTransaction): TX {
 
-   
+
     const tronTx = new TX();
     tronTx.hash = transaction.txID;
 
@@ -49,7 +49,7 @@ export function formatTron(transaction:BlockTransaction):TX{
                 tronTx.amountIn = contract.parameter?.value?.amount;
             } else if (contract.type === "TriggerSmartContract") {
                 const data = "0x" + contract.parameter?.value?.data;
-                const {owner_address, contract_address} = transaction.raw_data.contract[0].parameter.value;
+                const { owner_address, contract_address } = transaction.raw_data.contract[0].parameter.value;
                 tronTx.from = fromHex(owner_address).toLowerCase() as Lowercase<string>
                 tronTx.path = [fromHex(contract_address).toLowerCase() as Lowercase<string>]
                 const methodCode = data.substring(0, 10);
@@ -57,7 +57,7 @@ export function formatTron(transaction:BlockTransaction):TX{
                 tronTx.method = methodsNames[methodCode].split("_")[0] || methodCode;
                 const arr = data.split("");
                 arr.splice(0, 10).join(""); //method 
-                
+
                 if (methodCode === MethodCode.transfer) {
                     arr.splice(0, 24); // 000000000000000000000000
                     const to = fromHex("0x" + arr.splice(0, 40).join(""))
@@ -84,21 +84,21 @@ export function formatTron(transaction:BlockTransaction):TX{
                     tronTx.amountIn = amount;
                     tronTx.amountOut = amount;
                 } else if ([
-                    MethodCode.swapExactETHForTokensSupportingFeeOnTransferTokens+'',
-                    MethodCode.swapExactTokensForETHSupportingFeeOnTransferTokens+'',
-                    MethodCode.swapExactTokensForETH+'',
-                    MethodCode.swapExactETHForTokens+'',
-                    MethodCode.swapTokensForExactTokens+'',
-                    MethodCode.swapExactTokensForTokens+''
+                    MethodCode.swapExactETHForTokensSupportingFeeOnTransferTokens + '',
+                    MethodCode.swapExactTokensForETHSupportingFeeOnTransferTokens + '',
+                    MethodCode.swapExactTokensForETH + '',
+                    MethodCode.swapExactETHForTokens + '',
+                    MethodCode.swapTokensForExactTokens + '',
+                    MethodCode.swapExactTokensForTokens + ''
                 ].includes(methodCode)) {
                     tronTx.router = fromHex(contract_address).toLowerCase() as Lowercase<string>;
                     tronTx.needDecode = true;
                 }
-                
+
                 else tronTx.error = "unknown data " + data
             } else tronTx.error = "unknown contract.type " + contract.type
         } else tronTx.error = "No tronTransaction.raw_data?.contract"
-    
+
         return tronTx;
     } catch (e) {
         console.error(e)

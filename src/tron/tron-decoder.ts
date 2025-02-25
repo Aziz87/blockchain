@@ -2,6 +2,7 @@ import { Blockchain, NET } from "src/blockchain";
 import { utils } from "ethers";
 import { TronMethods } from "./tron-methods";
 import { TronTransaction, TronTransactionInfo } from "./tron-methods-d";
+import { TransactionInfo } from "tronweb/lib/esm/types";
 
 export default class TronDecoder{
 
@@ -150,7 +151,7 @@ export default class TronDecoder{
 
 async  _getHexEncodedResult(transactionID) {
     try {
-        const transaction = await this.bc.getTransactionReceipt(this.net,transactionID) as TronTransactionInfo
+        const transaction = await this.bc.getTransactionReceipt(this.net,transactionID) as TransactionInfo
         return "" == transaction.contractResult[0] ? transaction.resMessage : "0x" + transaction.contractResult[0];
     } catch (error) {
         throw error;
